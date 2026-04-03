@@ -1,0 +1,13 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lamarca — AI Blog Generator</title>
+    {% tailwind_css %}
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen">
+    {% block content %}{% endblock %}
+</body>
+</html>

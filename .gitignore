@@ -1,0 +1,29 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Django
+db.sqlite3
+*.sqlite3
+staticfiles/
+media/
+
+# Tailwind binary
+tailwindcss
+tailwindcss-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
