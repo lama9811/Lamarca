@@ -191,16 +191,13 @@ def generate_blog(request):
     # ── Fetch transcript ───────────────────────────────────────────────────────
     try:
         from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
-        # Try English first, then any available language
+        # Try English first, then fall back to any available language
         try:
-            transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            transcript_data = YouTubeTranscriptApi.fetch(video_id, languages=['en'])
         except Exception:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            transcript_data = transcript_list.find_transcript(
-                transcript_list._manually_created_transcripts or
-                list(transcript_list._generated_transcripts.keys()) or ['en']
-            ).fetch()
-        transcript = ' '.join(chunk['text'] for chunk in transcript_data)
+            transcript_list = YouTubeTranscriptApi.list(video_id)
+            transcript_data = transcript_list.find_transcript(['en']).fetch()
+        transcript = ' '.join(chunk.text for chunk in transcript_data)
     except TranscriptsDisabled:
         return JsonResponse({'error': 'This video has captions disabled. Please try a different video.'}, status=422)
     except NoTranscriptFound:
