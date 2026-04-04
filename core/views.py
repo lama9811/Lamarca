@@ -191,14 +191,22 @@ def generate_blog(request):
     # ── Fetch transcript ───────────────────────────────────────────────────────
     try:
         from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
-        transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
+        # Try English first, then any available language
+        try:
+            transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+        except Exception:
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            transcript_data = transcript_list.find_transcript(
+                transcript_list._manually_created_transcripts or
+                list(transcript_list._generated_transcripts.keys()) or ['en']
+            ).fetch()
         transcript = ' '.join(chunk['text'] for chunk in transcript_data)
     except TranscriptsDisabled:
-        return JsonResponse({'error': 'This video has transcripts disabled. Try a different video.'}, status=422)
+        return JsonResponse({'error': 'This video has captions disabled. Please try a different video.'}, status=422)
     except NoTranscriptFound:
-        return JsonResponse({'error': 'No transcript found for this video. It may not have captions.'}, status=422)
-    except Exception:
-        return JsonResponse({'error': 'Could not fetch the video transcript. Make sure the video is public.'}, status=422)
+        return JsonResponse({'error': 'No captions found for this video. Try a video that has captions/subtitles enabled.'}, status=422)
+    except Exception as e:
+        return JsonResponse({'error': f'Could not fetch transcript: {str(e)}. Make sure the video is public and has captions.'}, status=422)
 
     # Trim to ~12 000 chars to stay within token limits
     transcript = transcript[:12000]
