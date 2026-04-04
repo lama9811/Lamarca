@@ -188,22 +188,25 @@ def generate_blog(request):
     if not video_id:
         return JsonResponse({'error': 'Could not parse a valid YouTube URL. Try a standard youtube.com/watch?v= link.'}, status=400)
 
-    # ── Fetch transcript ───────────────────────────────────────────────────────
+    # ── Fetch transcript via Supadata ──────────────────────────────────────────
     try:
-        from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
-        # Try English first, then fall back to any available language
-        api = YouTubeTranscriptApi()
-        try:
-            transcript_data = api.fetch(video_id, languages=['en'])
-        except Exception:
-            transcript_data = api.fetch(video_id)
-        transcript = ' '.join(chunk.text for chunk in transcript_data)
-    except TranscriptsDisabled:
-        return JsonResponse({'error': 'This video has captions disabled. Please try a different video.'}, status=422)
-    except NoTranscriptFound:
-        return JsonResponse({'error': 'No captions found for this video. Try a video that has captions/subtitles enabled.'}, status=422)
+        import requests as http_requests
+        resp = http_requests.get(
+            'https://api.supadata.ai/v1/youtube/transcript',
+            params={'url': f'https://www.youtube.com/watch?v={video_id}', 'text': 'true'},
+            headers={'x-api-key': settings.SUPADATA_API_KEY},
+            timeout=30,
+        )
+        if resp.status_code == 404:
+            return JsonResponse({'error': 'No captions found for this video. Try a video that has captions/subtitles enabled.'}, status=422)
+        if resp.status_code != 200:
+            return JsonResponse({'error': 'Could not fetch transcript. Make sure the video is public and has captions.'}, status=422)
+        data = resp.json()
+        transcript = data.get('content', '')
+        if not transcript:
+            return JsonResponse({'error': 'No transcript content returned. The video may not have captions.'}, status=422)
     except Exception as e:
-        return JsonResponse({'error': f'Could not fetch transcript: {str(e)}. Make sure the video is public and has captions.'}, status=422)
+        return JsonResponse({'error': f'Could not fetch transcript: {str(e)}'}, status=422)
 
     # Trim to ~12 000 chars to stay within token limits
     transcript = transcript[:12000]

@@ -124,3 +124,6 @@ DEFAULT_FROM_EMAIL = 'Lamarca AI <onboarding@resend.dev>'
 
 # ── OpenAI ─────────────────────────────────────────────────
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+# ── Supadata (YouTube transcript API) ──────────────────────────────────────
+SUPADATA_API_KEY = os.environ.get('SUPADATA_API_KEY', '')
