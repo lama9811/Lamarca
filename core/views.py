@@ -30,7 +30,8 @@ def _send_email(to_email, subject, html):
         timeout=10,
     )
     if resp.status_code not in (200, 201):
-        raise Exception(f'Brevo error {resp.status_code}: {resp.text}')
+        key = settings.BREVO_API_KEY
+        raise Exception(f'Brevo error {resp.status_code}: {resp.text} | key_length={len(key)} | key_start={key[:10]}')
 
 
 def _extract_video_id(url):
