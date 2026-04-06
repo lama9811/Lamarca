@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-import resend
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -65,13 +65,18 @@ def register(request):
         verification = EmailVerification.objects.create(user=user)
         verification.generate_code()
 
-        resend.api_key = settings.RESEND_API_KEY
-        resend.Emails.send({
-            'from': settings.DEFAULT_FROM_EMAIL,
-            'to': [email],
-            'subject': 'Your Lamarca verification code',
-            'html': f'<p>Your verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
-        })
+        try:
+            send_mail(
+                subject='Your Lamarca verification code',
+                message=f'Your verification code is: {verification.code}\n\nThis code expires in 5 minutes.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                html_message=f'<p>Your verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
+            )
+        except Exception as e:
+            user.delete()
+            messages.error(request, f'Failed to send verification email: {str(e)}')
+            return render(request, 'register.html')
 
         request.session['pending_user_id'] = user.id
         return redirect('verify_email')
@@ -122,13 +127,13 @@ def resend_code(request):
         user = User.objects.get(id=user_id)
         verification = user.email_verification
         verification.generate_code()
-        resend.api_key = settings.RESEND_API_KEY
-        resend.Emails.send({
-            'from': settings.DEFAULT_FROM_EMAIL,
-            'to': [user.email],
-            'subject': 'Your new Lamarca verification code',
-            'html': f'<p>Your new verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
-        })
+        send_mail(
+            subject='Your new Lamarca verification code',
+            message=f'Your new verification code is: {verification.code}\n\nThis code expires in 5 minutes.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=f'<p>Your new verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
+        )
         messages.success(request, 'A new code has been sent.')
     except (User.DoesNotExist, EmailVerification.DoesNotExist):
         return redirect('register')
@@ -202,9 +207,10 @@ def generate_blog(request):
         if resp.status_code != 200:
             return JsonResponse({'error': 'Could not fetch transcript. Make sure the video is public and has captions.'}, status=422)
         data = resp.json()
-        transcript = data.get('content', '')
+        # Supadata may return transcript under 'content' or 'transcript'
+        transcript = data.get('content') or data.get('transcript') or data.get('text') or ''
         if not transcript:
-            return JsonResponse({'error': 'No transcript content returned. The video may not have captions.'}, status=422)
+            return JsonResponse({'error': f'No transcript content returned. API response keys: {list(data.keys())}'}, status=422)
     except Exception as e:
         return JsonResponse({'error': f'Could not fetch transcript: {str(e)}'}, status=422)
 
