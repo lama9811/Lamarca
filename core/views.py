@@ -18,7 +18,7 @@ from .models import EmailVerification
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _send_email(to_email, subject, html):
-    http_requests.post(
+    resp = http_requests.post(
         'https://api.brevo.com/v3/smtp/email',
         headers={'api-key': settings.BREVO_API_KEY, 'Content-Type': 'application/json'},
         json={
@@ -29,6 +29,8 @@ def _send_email(to_email, subject, html):
         },
         timeout=10,
     )
+    if resp.status_code not in (200, 201):
+        raise Exception(f'Brevo error {resp.status_code}: {resp.text}')
 
 
 def _extract_video_id(url):
