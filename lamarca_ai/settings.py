@@ -118,9 +118,10 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Email (Resend) ─────────────────────────────────────────
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-DEFAULT_FROM_EMAIL = 'Lamarca AI <onboarding@resend.dev>'
+# ── Email (Brevo API) ──────────────────────────────────────
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+BREVO_FROM_EMAIL = os.environ.get('BREVO_FROM_EMAIL', '')
+DEFAULT_FROM_EMAIL = BREVO_FROM_EMAIL
 
 # ── OpenAI ─────────────────────────────────────────────────
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')

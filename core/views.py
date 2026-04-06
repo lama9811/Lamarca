@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.mail import send_mail
+import requests as http_requests
 from django.http import JsonResponse
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -16,6 +16,20 @@ from .models import EmailVerification
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _send_email(to_email, subject, html):
+    http_requests.post(
+        'https://api.brevo.com/v3/smtp/email',
+        headers={'api-key': settings.BREVO_API_KEY, 'Content-Type': 'application/json'},
+        json={
+            'sender': {'name': 'Lamarca AI', 'email': settings.BREVO_FROM_EMAIL},
+            'to': [{'email': to_email}],
+            'subject': subject,
+            'htmlContent': html,
+        },
+        timeout=10,
+    )
+
 
 def _extract_video_id(url):
     """Return the 11-char YouTube video ID from any youtube.com or youtu.be URL."""
@@ -66,12 +80,10 @@ def register(request):
         verification.generate_code()
 
         try:
-            send_mail(
-                subject='Your Lamarca verification code',
-                message=f'Your verification code is: {verification.code}\n\nThis code expires in 5 minutes.',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                html_message=f'<p>Your verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
+            _send_email(
+                email,
+                'Your Lamarca verification code',
+                f'<p>Your verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
             )
         except Exception as e:
             user.delete()
@@ -127,12 +139,10 @@ def resend_code(request):
         user = User.objects.get(id=user_id)
         verification = user.email_verification
         verification.generate_code()
-        send_mail(
-            subject='Your new Lamarca verification code',
-            message=f'Your new verification code is: {verification.code}\n\nThis code expires in 5 minutes.',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=f'<p>Your new verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
+        _send_email(
+            user.email,
+            'Your new Lamarca verification code',
+            f'<p>Your new verification code is: <strong>{verification.code}</strong></p><p>This code expires in 5 minutes.</p>',
         )
         messages.success(request, 'A new code has been sent.')
     except (User.DoesNotExist, EmailVerification.DoesNotExist):
