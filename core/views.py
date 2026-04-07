@@ -19,19 +19,18 @@ from .models import EmailVerification
 
 def _send_email(to_email, subject, html):
     resp = http_requests.post(
-        'https://api.brevo.com/v3/smtp/email',
-        headers={'api-key': settings.BREVO_API_KEY, 'Content-Type': 'application/json'},
+        'https://api.sendgrid.com/v3/mail/send',
+        headers={'Authorization': f'Bearer {settings.SENDGRID_API_KEY}', 'Content-Type': 'application/json'},
         json={
-            'sender': {'name': 'Lamarca AI', 'email': settings.BREVO_FROM_EMAIL},
-            'to': [{'email': to_email}],
+            'personalizations': [{'to': [{'email': to_email}]}],
+            'from': {'email': settings.SENDGRID_FROM_EMAIL, 'name': 'Lamarca AI'},
             'subject': subject,
-            'htmlContent': html,
+            'content': [{'type': 'text/html', 'value': html}],
         },
         timeout=10,
     )
-    if resp.status_code not in (200, 201):
-        key = settings.BREVO_API_KEY
-        raise Exception(f'Brevo error {resp.status_code}: {resp.text} | key_length={len(key)} | key_start={key[:10]}')
+    if resp.status_code not in (200, 201, 202):
+        raise Exception(f'SendGrid error {resp.status_code}: {resp.text}')
 
 
 def _extract_video_id(url):

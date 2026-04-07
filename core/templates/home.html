@@ -1,227 +1,549 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  body {
+    background: #050510 !important;
+    color: #e2e8f0 !important;
+    overflow-x: hidden;
+  }
+
+  #three-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .bg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 50%),
+      linear-gradient(to bottom, rgba(5,5,16,0.2) 0%, transparent 15%, transparent 85%, rgba(5,5,16,0.9) 100%);
+  }
+
+  /* Animated gradient text */
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #a78bfa, #818cf8, #c084fc, #e879f9, #818cf8, #a78bfa);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  /* Glass morphism */
+  .glass-nav {
+    background: rgba(5,5,16,0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .glass-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 1rem;
+  }
+  .glass-input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e2e8f0;
+    transition: all 0.2s;
+  }
+  .glass-input::placeholder { color: rgba(255,255,255,0.3); }
+  .glass-input:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.5);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+  }
+
+  /* Animations */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 0 60px rgba(139,92,246,0.1); }
+    50%      { box-shadow: 0 0 30px rgba(139,92,246,0.5), 0 0 80px rgba(139,92,246,0.15); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  .anim-fade-up { opacity: 0; animation: fade-up 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .anim-d1 { animation-delay: 0.1s; }
+  .anim-d2 { animation-delay: 0.2s; }
+  .anim-d3 { animation-delay: 0.35s; }
+  .anim-d4 { animation-delay: 0.5s; }
+  .anim-d5 { animation-delay: 0.65s; }
+  .anim-d6 { animation-delay: 0.8s; }
+  .anim-d7 { animation-delay: 0.95s; }
+
+  .anim-float   { animation: float 6s ease-in-out infinite; }
+  .anim-float-2 { animation: float 6s ease-in-out 2s infinite; }
+  .anim-float-3 { animation: float 6s ease-in-out 4s infinite; }
+
+  .glow-btn {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6, #a855f7);
+    animation: pulse-glow 3s ease-in-out infinite;
+    transition: all 0.2s;
+  }
+  .glow-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .glow-btn:active { transform: scale(0.97); }
+
+  .shimmer-badge {
+    background: linear-gradient(90deg, rgba(139,92,246,0.08), rgba(139,92,246,0.25), rgba(139,92,246,0.08));
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+    border: 1px solid rgba(139,92,246,0.2);
+  }
+
+  .feature-card { transition: all 0.3s ease; }
+  .feature-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(139,92,246,0.2);
+    transform: translateY(-4px);
+  }
+
+  .modal-glass {
+    background: rgba(10,10,30,0.92);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .nav-link { color: rgba(255,255,255,0.6); transition: color 0.2s; }
+  .nav-link:hover { color: #fff; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<!-- NAV -->
-<nav class="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+<!-- THREE.JS CANVAS -->
+<canvas id="three-canvas"></canvas>
+<div class="bg-overlay"></div>
+
+<!-- CONTENT -->
+<div class="relative z-10 min-h-screen flex flex-col">
+
+  <!-- NAV -->
+  <nav class="glass-nav w-full sticky top-0 z-50">
     <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-        <span class="text-xl font-bold tracking-tight text-slate-900">Lamarca</span>
-        <div class="flex items-center gap-3">
-            <a href="{% url 'login' %}" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Sign in</a>
-            <a href="{% url 'register' %}" class="text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl transition shadow-sm shadow-violet-200">
-                Get started
-            </a>
-        </div>
+      <span class="text-xl font-bold tracking-tight gradient-text">Lamarca</span>
+      <div class="flex items-center gap-3">
+        <a href="{% url 'login' %}" class="nav-link text-sm font-medium">Sign in</a>
+        <a href="{% url 'register' %}" class="text-sm font-semibold glow-btn text-white px-4 py-2 rounded-xl">
+          Get started
+        </a>
+      </div>
     </div>
-</nav>
+  </nav>
 
-<!-- HERO -->
-<section class="max-w-5xl mx-auto px-6 pt-20 pb-12 text-center">
-    <div class="inline-flex items-center gap-2 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-        </svg>
-        Powered by AI
+  <!-- HERO -->
+  <section class="max-w-5xl mx-auto px-6 pt-24 sm:pt-32 pb-12 text-center">
+
+    <div class="anim-fade-up anim-d1 inline-flex items-center gap-2 shimmer-badge text-xs font-semibold px-4 py-2 rounded-full mb-8 tracking-wide uppercase" style="color: rgba(167,139,250,0.9);">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+      </svg>
+      Powered by AI
     </div>
 
-    <h1 class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
-        Lamarca
+    <h1 class="anim-fade-up anim-d2 text-6xl sm:text-8xl font-extrabold tracking-tight leading-none gradient-text pb-2">
+      Lamarca
     </h1>
-    <p class="mt-3 text-2xl sm:text-3xl font-semibold text-violet-600 tracking-tight">
-        AI Blog Generator
+
+    <p class="anim-fade-up anim-d3 mt-4 text-2xl sm:text-3xl font-semibold tracking-tight" style="color: rgba(255,255,255,0.85);">
+      AI Blog Generator
     </p>
-    <p class="mt-5 text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
-        Paste any YouTube link and get a fully written, polished blog post in seconds.
+
+    <p class="anim-fade-up anim-d4 mt-5 text-lg max-w-xl mx-auto leading-relaxed" style="color: rgba(255,255,255,0.4);">
+      Paste any YouTube link and get a fully written, polished blog post in seconds.
     </p>
-</section>
+  </section>
 
-<!-- INPUT CARD -->
-<section class="max-w-3xl mx-auto px-6 pb-16">
-    <div class="bg-white rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-100 p-8">
+  <!-- INPUT CARD -->
+  <section class="max-w-3xl mx-auto px-6 pb-24 w-full">
+    <div class="anim-fade-up anim-d5 glass-card p-8">
 
-        <label for="youtube-url" class="block text-sm font-semibold text-slate-700 mb-2">
-            YouTube Video URL
-        </label>
+      <label for="youtube-url" class="block text-sm font-semibold mb-3" style="color: rgba(255,255,255,0.7);">
+        YouTube Video URL
+      </label>
 
-        <div class="flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1">
-                <!-- YouTube icon inside input -->
-                <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                    <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M23.498 6.186a2.994 2.994 0 00-2.107-2.117C19.379 3.5 12 3.5 12 3.5s-7.379 0-9.391.569A2.994 2.994 0 00.502 6.186 31.37 31.37 0 000 12a31.37 31.37 0 00.502 5.814 2.994 2.994 0 002.107 2.117C4.621 20.5 12 20.5 12 20.5s7.379 0 9.391-.569a2.994 2.994 0 002.107-2.117A31.37 31.37 0 0024 12a31.37 31.37 0 00-.502-5.814zM9.75 15.521V8.479L15.5 12l-5.75 3.521z"/>
-                    </svg>
-                </span>
-                <input
-                    id="youtube-url"
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
-                />
-            </div>
-            <button
-                id="generate-btn"
-                class="flex items-center justify-center gap-2 px-6 py-3.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm shadow-violet-200 whitespace-nowrap cursor-pointer"
-            >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                Generate Blog
-            </button>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <svg class="w-5 h-5" style="color: rgba(255,255,255,0.25);" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a2.994 2.994 0 00-2.107-2.117C19.379 3.5 12 3.5 12 3.5s-7.379 0-9.391.569A2.994 2.994 0 00.502 6.186 31.37 31.37 0 000 12a31.37 31.37 0 00.502 5.814 2.994 2.994 0 002.107 2.117C4.621 20.5 12 20.5 12 20.5s7.379 0 9.391-.569a2.994 2.994 0 002.107-2.117A31.37 31.37 0 0024 12a31.37 31.37 0 00-.502-5.814zM9.75 15.521V8.479L15.5 12l-5.75 3.521z"/>
+            </svg>
+          </span>
+          <input
+            id="youtube-url"
+            type="url"
+            placeholder="https://www.youtube.com/watch?v=..."
+            class="glass-input w-full pl-12 pr-4 py-3.5 rounded-xl text-sm"
+          />
         </div>
+        <button
+          id="generate-btn"
+          class="flex items-center justify-center gap-2 px-6 py-3.5 glow-btn text-white text-sm font-semibold rounded-xl whitespace-nowrap cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Generate Blog
+        </button>
+      </div>
 
-        <!-- Helper text -->
-        <p class="mt-3 text-xs text-slate-400">
-            Works with any public YouTube video. Supports youtube.com and youtu.be links.
-        </p>
+      <p class="mt-3 text-xs" style="color: rgba(255,255,255,0.2);">
+        Works with any public YouTube video. Supports youtube.com and youtu.be links.
+      </p>
     </div>
-</section>
+  </section>
 
-<!-- Sign-in prompt shown after user types a URL (opened via modal) -->
+  <!-- FEATURES -->
+  <section class="max-w-5xl mx-auto px-6 pb-28 w-full">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+      <div class="anim-fade-up anim-d5 anim-float feature-card glass-card p-6 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(139,92,246,0.12);">
+          <svg class="w-6 h-6" style="color: #a78bfa;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">Lightning Fast</h3>
+        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Generate polished blog posts from any YouTube video in seconds.</p>
+      </div>
+
+      <div class="anim-fade-up anim-d6 anim-float-2 feature-card glass-card p-6 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(99,102,241,0.12);">
+          <svg class="w-6 h-6" style="color: #818cf8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">AI Powered</h3>
+        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Advanced AI creates natural, engaging content that reads beautifully.</p>
+      </div>
+
+      <div class="anim-fade-up anim-d7 anim-float-3 feature-card glass-card p-6 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(168,85,247,0.12);">
+          <svg class="w-6 h-6" style="color: #c084fc;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+          </svg>
+        </div>
+        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">Any Video</h3>
+        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Works with any public YouTube video. All URL formats and languages supported.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto;">
+    <div class="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <span class="text-sm font-bold gradient-text">Lamarca</span>
+      <span class="text-xs" style="color: rgba(255,255,255,0.2);">&copy; 2026 Lamarca AI. All rights reserved.</span>
+    </div>
+  </footer>
+
+</div>
 
 <!-- ADMIN FLOATING BUTTON -->
 <button id="admin-toggle"
-    class="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-lg shadow-violet-300/50 transition-all duration-150 cursor-pointer">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-    </svg>
-    Admin
+  class="fixed bottom-6 right-6 z-50 flex items-center gap-2 glow-btn text-white text-sm font-semibold px-5 py-3 rounded-2xl cursor-pointer">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+  </svg>
+  Admin
 </button>
 
 <!-- ADMIN MODAL BACKDROP -->
 <div id="admin-backdrop"
-    class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center"
-    style="transition: opacity 0.2s;">
+  class="fixed inset-0 z-50 hidden items-center justify-center"
+  style="background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity 0.2s;">
 
-    <!-- MODAL PANEL -->
-    <div id="admin-modal"
-        class="relative bg-white w-full max-w-sm mx-4 rounded-3xl shadow-2xl p-8 flex flex-col gap-6"
-        style="transform: translateY(24px); opacity: 0; transition: transform 0.25s cubic-bezier(.4,0,.2,1), opacity 0.25s;">
+  <div id="admin-modal"
+    class="relative modal-glass w-full max-w-sm mx-4 rounded-3xl p-8 flex flex-col gap-6"
+    style="transform: translateY(24px); opacity: 0; transition: transform 0.25s cubic-bezier(.4,0,.2,1), opacity 0.25s;">
 
-        <!-- Close -->
-        <button id="admin-close"
-            class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
+    <!-- Close -->
+    <button id="admin-close"
+      class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full transition cursor-pointer"
+      style="color: rgba(255,255,255,0.4);"
+      onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'"
+      onmouseout="this.style.color='rgba(255,255,255,0.4)';this.style.background='transparent'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
 
-        <!-- Header -->
-        <div class="text-center">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 mb-3">
-                <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
-            </div>
-            <h2 class="text-xl font-bold text-slate-900">Admin Access</h2>
-            <p class="text-sm text-slate-500 mt-1">Create an account or sign in to continue</p>
-        </div>
-
-        <!-- Divider -->
-        <div class="border-t border-slate-100"></div>
-
-        <!-- Actions -->
-        <div class="flex flex-col gap-3">
-            <a href="{% url 'register' %}"
-                class="flex items-center gap-3 w-full px-5 py-4 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-semibold text-sm rounded-2xl transition-all duration-150 shadow-sm shadow-violet-200 cursor-pointer">
-                <span class="flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                    </svg>
-                </span>
-                <div>
-                    <div>Create account</div>
-                    <div class="text-xs font-normal text-violet-200 mt-0.5">Register with email verification</div>
-                </div>
-                <svg class="w-4 h-4 ml-auto opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-
-            <a href="{% url 'login' %}"
-                class="flex items-center gap-3 w-full px-5 py-4 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 font-semibold text-sm rounded-2xl border border-slate-200 transition-all duration-150 cursor-pointer">
-                <span class="flex items-center justify-center w-8 h-8 bg-slate-200 rounded-xl">
-                    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                    </svg>
-                </span>
-                <div>
-                    <div>Sign in</div>
-                    <div class="text-xs font-normal text-slate-400 mt-0.5">Access your existing account</div>
-                </div>
-                <svg class="w-4 h-4 ml-auto opacity-40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-        </div>
-
+    <!-- Header -->
+    <div class="text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3" style="background: rgba(139,92,246,0.15);">
+        <svg class="w-6 h-6" style="color: #a78bfa;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold" style="color: rgba(255,255,255,0.95);">Admin Access</h2>
+      <p class="text-sm mt-1" style="color: rgba(255,255,255,0.4);">Create an account or sign in to continue</p>
     </div>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.08);"></div>
+
+    <!-- Actions -->
+    <div class="flex flex-col gap-3">
+      <a href="{% url 'register' %}"
+        class="flex items-center gap-3 w-full px-5 py-4 glow-btn text-white font-semibold text-sm rounded-2xl cursor-pointer" style="animation: none;">
+        <span class="flex items-center justify-center w-8 h-8 rounded-xl" style="background: rgba(255,255,255,0.15);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+        </span>
+        <div>
+          <div>Create account</div>
+          <div class="text-xs font-normal mt-0.5" style="color: rgba(255,255,255,0.5);">Register with email verification</div>
+        </div>
+        <svg class="w-4 h-4 ml-auto opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a href="{% url 'login' %}"
+        class="flex items-center gap-3 w-full px-5 py-4 font-semibold text-sm rounded-2xl transition-all duration-150 cursor-pointer"
+        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8);"
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+        <span class="flex items-center justify-center w-8 h-8 rounded-xl" style="background: rgba(255,255,255,0.08);">
+          <svg class="w-4 h-4" style="color: rgba(255,255,255,0.6);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+          </svg>
+        </span>
+        <div>
+          <div>Sign in</div>
+          <div class="text-xs font-normal mt-0.5" style="color: rgba(255,255,255,0.3);">Access your existing account</div>
+        </div>
+        <svg class="w-4 h-4 ml-auto" style="opacity: 0.3;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
 </div>
 
-<!-- FOOTER -->
-<footer class="border-t border-slate-200 bg-white mt-4">
-    <div class="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span class="text-sm font-bold text-slate-900">Lamarca</span>
-        <span class="text-xs text-slate-400">&copy; 2026 Lamarca AI. All rights reserved.</span>
-    </div>
-</footer>
+<!-- ==================== SCRIPTS ==================== -->
+<script>
+(function() {
+  /* ---------- THREE.JS SCENE ---------- */
+  var canvas = document.getElementById('three-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  var mobile = window.innerWidth < 768;
+  var GRID   = mobile ? 30 : 50;
+  var STARS  = mobile ? 400 : 1200;
+  var SPACING = 0.5;
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: !mobile });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  var scene  = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 120);
+  camera.position.set(0, 2, 18);
+
+  /* --- Particle wave --- */
+  var waveCount = GRID * GRID;
+  var waveGeo   = new THREE.BufferGeometry();
+  var wPos      = new Float32Array(waveCount * 3);
+  var wCol      = new Float32Array(waveCount * 3);
+
+  for (var i = 0; i < GRID; i++) {
+    for (var j = 0; j < GRID; j++) {
+      var idx = (i * GRID + j) * 3;
+      wPos[idx]     = (i - GRID / 2) * SPACING;
+      wPos[idx + 1] = 0;
+      wPos[idx + 2] = (j - GRID / 2) * SPACING;
+      var t = j / GRID;
+      wCol[idx]     = 0.55 + t * 0.1;
+      wCol[idx + 1] = 0.36 - t * 0.2;
+      wCol[idx + 2] = 0.96;
+    }
+  }
+
+  waveGeo.setAttribute('position', new THREE.BufferAttribute(wPos, 3));
+  waveGeo.setAttribute('color',    new THREE.BufferAttribute(wCol, 3));
+
+  var waveMat = new THREE.PointsMaterial({
+    size: mobile ? 0.07 : 0.08,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.65,
+    sizeAttenuation: true
+  });
+
+  var wave = new THREE.Points(waveGeo, waveMat);
+  wave.position.y = -5;
+  scene.add(wave);
+
+  /* --- Floating wireframe shapes --- */
+  var wireMat1 = new THREE.MeshBasicMaterial({ color: 0x7c3aed, wireframe: true, transparent: true, opacity: 0.12 });
+  var wireMat2 = new THREE.MeshBasicMaterial({ color: 0x6366f1, wireframe: true, transparent: true, opacity: 0.10 });
+  var wireMat3 = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.10 });
+
+  var ico1 = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5, 1), wireMat1);
+  ico1.position.set(-10, 4, -8);
+  scene.add(ico1);
+
+  var ico2 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.8, 1), wireMat2);
+  ico2.position.set(9, -1, -5);
+  scene.add(ico2);
+
+  if (!mobile) {
+    var torus = new THREE.Mesh(new THREE.TorusGeometry(2, 0.4, 12, 40), wireMat3);
+    torus.position.set(7, 6, -10);
+    scene.add(torus);
+  }
+
+  /* --- Stars --- */
+  var starGeo = new THREE.BufferGeometry();
+  var sPos    = new Float32Array(STARS * 3);
+  for (var s = 0; s < STARS; s++) {
+    sPos[s * 3]     = (Math.random() - 0.5) * 80;
+    sPos[s * 3 + 1] = (Math.random() - 0.5) * 80;
+    sPos[s * 3 + 2] = (Math.random() - 0.5) * 80;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+  var starMat = new THREE.PointsMaterial({ size: 0.06, color: 0xffffff, transparent: true, opacity: 0.45 });
+  var stars   = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  /* --- Mouse parallax --- */
+  var mx = 0, my = 0;
+  window.addEventListener('mousemove', function(e) {
+    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  /* --- Animate --- */
+  function animate() {
+    requestAnimationFrame(animate);
+    var t = performance.now() * 0.001;
+
+    /* Wave motion */
+    var pos = wave.geometry.attributes.position.array;
+    for (var i = 0; i < GRID; i++) {
+      for (var j = 0; j < GRID; j++) {
+        var idx = (i * GRID + j) * 3;
+        var x = (i - GRID / 2) * SPACING;
+        var z = (j - GRID / 2) * SPACING;
+        pos[idx + 1] = Math.sin(x * 0.4 + t * 0.8) * 0.7 + Math.cos(z * 0.3 + t * 0.6) * 0.5;
+      }
+    }
+    wave.geometry.attributes.position.needsUpdate = true;
+
+    /* Rotate shapes */
+    ico1.rotation.x += 0.002;
+    ico1.rotation.y += 0.003;
+    ico2.rotation.x -= 0.003;
+    ico2.rotation.z += 0.002;
+    if (torus) {
+      torus.rotation.x += 0.0015;
+      torus.rotation.y += 0.003;
+    }
+
+    /* Stars drift */
+    stars.rotation.y += 0.00015;
+    stars.rotation.x += 0.00005;
+
+    /* Camera parallax */
+    camera.position.x += (mx * 1.5 - camera.position.x) * 0.015;
+    camera.position.y += (-my * 0.8 + 2 - camera.position.y) * 0.015;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* Resize */
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
 
 <script>
-    const btn = document.getElementById('generate-btn');
-    const input = document.getElementById('youtube-url');
-    const outputSection = document.getElementById('output-section');
-    const loadingState = document.getElementById('loading-state');
-    const resultState = document.getElementById('result-state');
-    const blogOutput = document.getElementById('blog-output');
-    const copyBtn = document.getElementById('copy-btn');
+  /* ---------- UI LOGIC ---------- */
+  var btn   = document.getElementById('generate-btn');
+  var input = document.getElementById('youtube-url');
 
-    // Generate button on home page → open admin modal so user can sign in / register
-    btn.addEventListener('click', () => {
-        const url = input.value.trim();
-        if (!url) {
-            input.focus();
-            input.classList.add('ring-2', 'ring-red-400', 'border-transparent');
-            setTimeout(() => input.classList.remove('ring-2', 'ring-red-400', 'border-transparent'), 2000);
-            return;
-        }
-        openModal();
-    });
-
-    // Admin modal
-    const adminToggle = document.getElementById('admin-toggle');
-    const adminBackdrop = document.getElementById('admin-backdrop');
-    const adminModal = document.getElementById('admin-modal');
-    const adminClose = document.getElementById('admin-close');
-
-    function openModal() {
-        adminBackdrop.classList.remove('hidden');
-        adminBackdrop.classList.add('flex');
-        requestAnimationFrame(() => {
-            adminBackdrop.style.opacity = '1';
-            adminModal.style.transform = 'translateY(0)';
-            adminModal.style.opacity = '1';
-        });
-        document.body.style.overflow = 'hidden';
+  btn.addEventListener('click', function() {
+    var url = input.value.trim();
+    if (!url) {
+      input.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.3)';
+      input.style.borderColor = 'rgba(239,68,68,0.5)';
+      setTimeout(function() {
+        input.style.boxShadow = '';
+        input.style.borderColor = 'rgba(255,255,255,0.1)';
+      }, 2000);
+      return;
     }
+    openModal();
+  });
 
-    function closeModal() {
-        adminBackdrop.style.opacity = '0';
-        adminModal.style.transform = 'translateY(24px)';
-        adminModal.style.opacity = '0';
-        setTimeout(() => {
-            adminBackdrop.classList.add('hidden');
-            adminBackdrop.classList.remove('flex');
-            document.body.style.overflow = '';
-        }, 250);
-    }
+  /* Admin modal */
+  var adminToggle   = document.getElementById('admin-toggle');
+  var adminBackdrop = document.getElementById('admin-backdrop');
+  var adminModal    = document.getElementById('admin-modal');
+  var adminClose    = document.getElementById('admin-close');
 
-    adminToggle.addEventListener('click', openModal);
-    adminClose.addEventListener('click', closeModal);
-    adminBackdrop.addEventListener('click', (e) => {
-        if (e.target === adminBackdrop) closeModal();
+  function openModal() {
+    adminBackdrop.classList.remove('hidden');
+    adminBackdrop.classList.add('flex');
+    requestAnimationFrame(function() {
+      adminBackdrop.style.opacity = '1';
+      adminModal.style.transform  = 'translateY(0)';
+      adminModal.style.opacity    = '1';
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    });
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    adminBackdrop.style.opacity = '0';
+    adminModal.style.transform  = 'translateY(24px)';
+    adminModal.style.opacity    = '0';
+    setTimeout(function() {
+      adminBackdrop.classList.add('hidden');
+      adminBackdrop.classList.remove('flex');
+      document.body.style.overflow = '';
+    }, 250);
+  }
+
+  adminToggle.addEventListener('click', openModal);
+  adminClose.addEventListener('click', closeModal);
+  adminBackdrop.addEventListener('click', function(e) {
+    if (e.target === adminBackdrop) closeModal();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
 </script>
 
 {% endblock %}
