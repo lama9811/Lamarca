@@ -126,10 +126,6 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Email (SendGrid API) ───────────────────────────────────
-SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
-SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', '')
-
 # ── Google Gemini ──────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 

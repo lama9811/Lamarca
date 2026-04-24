@@ -7,26 +7,14 @@
   <div class="auth-card">
     <div class="auth-stamp caveat">new subscriber</div>
     <h1 class="fraunces">Join the masthead.</h1>
-    <p class="auth-sub">Five drafts on the house. No credit card.</p>
-
-    <form method="POST" class="auth-form" novalidate>
-      {% csrf_token %}
-      <label class="auth-label">Email</label>
-      <input class="auth-input" type="email" name="email" required value="{{ request.POST.email }}" placeholder="you@example.com" />
-      <label class="auth-label">Password</label>
-      <input class="auth-input" type="password" name="password" required minlength="8" placeholder="at least 8 characters" />
-      <label class="auth-label">Confirm password</label>
-      <input class="auth-input" type="password" name="confirm_password" required placeholder="repeat your password" />
-      <button type="submit" class="btn-primary btn-block">Create account ✦</button>
-    </form>
+    <p class="auth-sub">Five drafts on the house. Sign in with your Gmail — that's the only thing you need.</p>
 
     {% if google_client_id %}
-    <div class="auth-divider"><span>or continue with</span></div>
     <div id="g_id_onload"
          data-client_id="{{ google_client_id }}"
          data-callback="onGoogleSignIn"
          data-auto_prompt="false"></div>
-    <div class="google-wrap">
+    <div class="google-wrap" style="margin-top:10px;">
       <div class="g_id_signin"
            data-type="standard"
            data-size="large"
@@ -37,9 +25,13 @@
            data-width="340"></div>
     </div>
     <div class="google-err" id="google-err"></div>
+    {% else %}
+    <p class="auth-sub" style="color:var(--accent-2);">
+      Google Sign-In isn't configured yet. Set <code>GOOGLE_CLIENT_ID</code> in your <code>.env</code> and restart the server.
+    </p>
     {% endif %}
 
-    <p class="auth-alt">Already a subscriber? <a href="{% url 'login' %}">Log in</a></p>
+    <p class="auth-alt" style="margin-top:28px;">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
   </div>
 
   <div class="auth-side">
