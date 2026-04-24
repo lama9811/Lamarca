@@ -1,549 +1,705 @@
 {% extends "base.html" %}
 
-{% block extra_head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<style>
-  body {
-    background: #050510 !important;
-    color: #e2e8f0 !important;
-    overflow-x: hidden;
-  }
+{% block title %}Lamarca — YouTube videos, rewritten as a draft you'd actually publish.{% endblock %}
 
-  #three-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-    pointer-events: none;
-  }
+{% block extra_css %}
+/* ============ HERO ============ */
+.hero{
+  position:relative;
+  min-height:620px;
+  padding:60px 32px 80px;
+  overflow:hidden;
+  border-bottom:2px solid var(--ink);
+}
+.hero-scene{
+  position:absolute;
+  inset:0;
+  width:100%; height:100%;
+  z-index:0;
+}
+.hero-wordmark{
+  position:relative; z-index:2;
+  max-width:1320px; margin:0 auto;
+  display:flex; align-items:flex-start;
+}
+.wordmark{
+  font-family:'Caveat Brush', cursive;
+  font-size:clamp(90px, 16vw, 220px);
+  color:var(--paper);
+  line-height:.85;
+  letter-spacing:-0.02em;
+  text-shadow: 4px 4px 0 rgba(0,0,0,.15);
+}
+.wordmark-trademark{
+  font-family:'Fraunces', serif;
+  color:var(--paper);
+  font-size:28px;
+  margin-top:24px;
+  opacity:.7;
+}
+.hero-content{
+  position:relative; z-index:2;
+  max-width:1320px; margin:40px auto 0;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:60px;
+  align-items:end;
+}
+.hero-desc{ max-width:500px; }
+.hero-desc p{
+  color:var(--paper);
+  font-size:18px;
+  line-height:1.55;
+  margin:0 0 16px;
+  font-family:'Fraunces', serif;
+  font-weight:400;
+}
+.hero-cta{
+  display:inline-flex; align-items:center; gap:6px;
+  color:var(--cream);
+  border-bottom:1px solid var(--cream);
+  padding-bottom:2px;
+  font-size:15px;
+}
+.hero-cta:hover{ color:#fff; border-color:#fff; }
 
-  .bg-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 50%),
-      linear-gradient(to bottom, rgba(5,5,16,0.2) 0%, transparent 15%, transparent 85%, rgba(5,5,16,0.9) 100%);
-  }
+@media (max-width:900px){
+  .hero-content{ grid-template-columns:1fr; gap:30px; }
+  .hero{ padding:40px 20px 60px; min-height:auto; }
+  .url-field{ min-width:0; }
+}
 
-  /* Animated gradient text */
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-  .gradient-text {
-    background: linear-gradient(135deg, #a78bfa, #818cf8, #c084fc, #e879f9, #818cf8, #a78bfa);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradient-shift 8s ease infinite;
-  }
+/* ============ MARQUEE ============ */
+.marquee{
+  background:var(--paper-2);
+  border-bottom:1px solid var(--rule);
+  overflow:hidden;
+  padding:14px 0;
+  border-top:1px solid var(--rule);
+}
+.marquee-track{
+  display:inline-flex;
+  white-space:nowrap;
+  animation: mqueue 50s linear infinite;
+  font-family:'Fraunces', serif;
+  font-size:18px;
+  color:var(--ink-2);
+  font-style:italic;
+}
+.marquee-item{
+  display:inline-flex; align-items:center; gap:14px;
+  padding:0 22px;
+}
+.marquee-star{ color:var(--accent-2); font-size:14px; }
+@keyframes mqueue{ from{transform:translateX(0)} to{transform:translateX(-33.3333%)} }
 
-  /* Glass morphism */
-  .glass-nav {
-    background: rgba(5,5,16,0.5);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .glass-card {
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 1rem;
-  }
-  .glass-input {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #e2e8f0;
-    transition: all 0.2s;
-  }
-  .glass-input::placeholder { color: rgba(255,255,255,0.3); }
-  .glass-input:focus {
-    outline: none;
-    border-color: rgba(139,92,246,0.5);
-    box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
-  }
+/* ============ FEATURED ============ */
+.featured{
+  max-width:1320px; margin:0 auto;
+  padding:90px 32px;
+  display:grid;
+  grid-template-columns: 1fr 420px;
+  gap:80px;
+  align-items:center;
+  border-bottom:1px solid var(--rule);
+}
+.dept-label{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  text-transform:uppercase; letter-spacing:.15em;
+  color:var(--ink-3);
+  margin-bottom:18px;
+  display:flex; align-items:center; gap:10px;
+}
+.dept-label::before{ content:""; width:24px; height:1px; background:var(--ink-3); }
+.featured-left h2{
+  font-size:clamp(30px, 3.6vw, 48px);
+  line-height:1.1;
+  margin:0 0 24px;
+  font-weight:500;
+}
+.featured-left h2 em{ color:var(--accent-2); font-style:italic; }
+.byline{
+  font-family:'Fraunces', serif;
+  font-style:italic;
+  color:var(--ink-3);
+  font-size:15px;
+  margin-bottom:24px;
+}
+.read-link{
+  display:inline-flex; align-items:center;
+  font-size:15px;
+  color:var(--accent); font-weight:500;
+  border-bottom:1px solid var(--accent);
+  padding-bottom:2px;
+}
+.featured-cover{
+  aspect-ratio:3/4;
+  background:var(--accent);
+  border-radius:6px;
+  padding:32px 28px;
+  position:relative;
+  display:flex; flex-direction:column;
+  color:#fff;
+  cursor:pointer;
+  transform:rotate(-2deg);
+  box-shadow: 12px 12px 0 var(--ink);
+  transition:transform .3s;
+  text-decoration:none;
+}
+.featured-cover:hover{ transform:rotate(0) scale(1.02); color:#fff; }
+.cover-kicker{ font-size:11px; letter-spacing:.15em; text-transform:uppercase; opacity:.8; margin-bottom:auto; }
+.cover-title{ font-size:52px; line-height:.95; margin:40px 0 16px; }
+.cover-meta{ font-size:11px; opacity:.8; }
+.cover-stamp{
+  position:absolute;
+  top:20px; right:20px;
+  background:var(--accent-4);
+  color:var(--ink);
+  padding:4px 10px;
+  border-radius:999px;
+  font-family:'Caveat Brush', cursive;
+  font-size:14px;
+  transform:rotate(8deg);
+}
 
-  /* Animations */
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(30px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-8px); }
-  }
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 0 60px rgba(139,92,246,0.1); }
-    50%      { box-shadow: 0 0 30px rgba(139,92,246,0.5), 0 0 80px rgba(139,92,246,0.15); }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -200% 50%; }
-    100% { background-position: 200% 50%; }
-  }
+@media (max-width:900px){
+  .featured{ grid-template-columns:1fr; gap:40px; padding:60px 20px; }
+  .featured-cover{ max-width:360px; margin:0 auto; }
+}
 
-  .anim-fade-up { opacity: 0; animation: fade-up 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
-  .anim-d1 { animation-delay: 0.1s; }
-  .anim-d2 { animation-delay: 0.2s; }
-  .anim-d3 { animation-delay: 0.35s; }
-  .anim-d4 { animation-delay: 0.5s; }
-  .anim-d5 { animation-delay: 0.65s; }
-  .anim-d6 { animation-delay: 0.8s; }
-  .anim-d7 { animation-delay: 0.95s; }
+/* ============ GALLERY ============ */
+.gallery{
+  max-width:1320px; margin:0 auto;
+  padding:80px 32px;
+  border-bottom:1px solid var(--rule);
+}
+.gallery-head{
+  display:flex; justify-content:space-between;
+  align-items:flex-end;
+  gap:30px;
+  margin-bottom:40px;
+  flex-wrap:wrap;
+}
+.gallery-head h2{
+  font-size:clamp(32px, 4vw, 52px);
+  line-height:1.05;
+  margin:0;
+  font-weight:500;
+}
+.gallery-head h2 em{ color:var(--accent-2); font-style:italic; }
+.filter-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{
+  padding:6px 14px;
+  background:transparent;
+  border:1px solid var(--rule);
+  border-radius:999px;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink-2);
+  cursor:pointer;
+  transition:all .15s;
+}
+.chip:hover{ border-color:var(--ink); color:var(--ink); }
+.chip.on{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
 
-  .anim-float   { animation: float 6s ease-in-out infinite; }
-  .anim-float-2 { animation: float 6s ease-in-out 2s infinite; }
-  .anim-float-3 { animation: float 6s ease-in-out 4s infinite; }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:28px 20px;
+}
+.draft-card{ cursor:pointer; transition:transform .2s; }
+.draft-card:hover{ transform:translateY(-4px); }
+.draft-card.big{ grid-column:span 2; grid-row:span 2; }
+.draft-card.tall{ grid-row:span 2; }
+.draft-thumb{
+  aspect-ratio:4/3;
+  border-radius:10px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.draft-card.big .draft-thumb{ aspect-ratio:4/5; }
+.draft-card.tall .draft-thumb{ aspect-ratio:3/5; }
+.draft-thumb-inner{
+  position:absolute; inset:0;
+  padding:22px;
+  display:flex; flex-direction:column;
+  justify-content:space-between;
+}
+.draft-play{
+  align-self:flex-start;
+  width:34px; height:34px;
+  background:var(--paper);
+  border-radius:50%;
+  display:grid; place-items:center;
+  color:var(--ink);
+  font-size:11px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.2);
+}
+.draft-duration{
+  position:absolute; top:22px; right:22px;
+  background:rgba(0,0,0,.7);
+  color:#fff;
+  padding:3px 8px;
+  border-radius:4px;
+  font-size:11px;
+}
+.draft-headline{
+  font-size:36px;
+  line-height:.95;
+  white-space:pre-line;
+  letter-spacing:-0.02em;
+}
+.draft-card.big .draft-headline{ font-size:64px; }
+.draft-meta{ padding:14px 4px 0; }
+.draft-kicker{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--accent-2);
+  margin-bottom:6px;
+}
+.draft-title{
+  font-family:'Fraunces', serif;
+  font-size:17px;
+  line-height:1.25;
+  color:var(--ink);
+  margin-bottom:8px;
+  font-weight:500;
+}
+.draft-byline{
+  display:flex; justify-content:space-between;
+  font-size:12px;
+  color:var(--ink-3);
+}
+.draft-tag{
+  background:var(--paper-2);
+  padding:1px 8px;
+  border-radius:999px;
+  font-size:11px;
+}
 
-  .glow-btn {
-    background: linear-gradient(135deg, #7c3aed, #8b5cf6, #a855f7);
-    animation: pulse-glow 3s ease-in-out infinite;
-    transition: all 0.2s;
-  }
-  .glow-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
-  .glow-btn:active { transform: scale(0.97); }
+@media (max-width:1000px){ .grid{ grid-template-columns:repeat(3, 1fr); } }
+@media (max-width:720px){
+  .grid{ grid-template-columns:repeat(2, 1fr); gap:20px 14px; }
+  .draft-card.big{ grid-column:span 2; grid-row:auto; }
+  .draft-card.tall{ grid-row:auto; }
+  .draft-card.big .draft-headline{ font-size:44px; }
+}
 
-  .shimmer-badge {
-    background: linear-gradient(90deg, rgba(139,92,246,0.08), rgba(139,92,246,0.25), rgba(139,92,246,0.08));
-    background-size: 200% 100%;
-    animation: shimmer 3s ease-in-out infinite;
-    border: 1px solid rgba(139,92,246,0.2);
-  }
+/* ============ QUOTE SLAB ============ */
+.quote-slab{ position:relative; max-width:900px; margin:80px auto; padding:40px 32px; text-align:center; }
+.qmark{ display:block; font-family:'Fraunces', serif; font-size:140px; line-height:.6; color:var(--accent-2); margin-bottom:-10px; }
+.quote-slab p{ font-size:clamp(24px, 3vw, 38px); line-height:1.2; color:var(--ink); margin:0 0 20px; font-weight:400; }
+.quote-slab p em{ color:var(--accent); font-style:italic; }
 
-  .feature-card { transition: all 0.3s ease; }
-  .feature-card:hover {
-    background: rgba(255,255,255,0.07);
-    border-color: rgba(139,92,246,0.2);
-    transform: translateY(-4px);
-  }
+/* ============ TICKER TAPES ============ */
+.tape-stack{ position:relative; margin:40px 0; transform:rotate(-2deg); overflow:hidden; padding:20px 0; }
+.tape-row{ overflow:hidden; padding:10px 0; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); }
+.tape-row + .tape-row{ border-top:0; }
+.tape-track{
+  display:inline-flex; white-space:nowrap;
+  animation: tape 30s linear infinite;
+  font-family:'Fraunces', serif;
+  font-size:22px; font-weight:500; font-style:italic;
+}
+.tape-row.rev .tape-track{ animation-direction:reverse; }
+.tape-item{ display:inline-flex; align-items:center; gap:18px; padding:0 24px; }
+.tape-dot{ color:var(--accent-2); font-size:10px; }
+@keyframes tape{ from{transform:translateX(0)} to{transform:translateX(-33.3333%)} }
 
-  .modal-glass {
-    background: rgba(10,10,30,0.92);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .nav-link { color: rgba(255,255,255,0.6); transition: color 0.2s; }
-  .nav-link:hover { color: #fff; }
-</style>
+/* ============ HOW IT WORKS ============ */
+.howto{
+  max-width:1320px; margin:0 auto;
+  padding:100px 32px;
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+}
+.howto h2{
+  font-size:clamp(36px, 5vw, 68px);
+  line-height:1.02;
+  margin:0 0 60px;
+  font-weight:500;
+}
+.howto h2 em{ color:var(--accent-2); font-style:italic; }
+.steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:40px; }
+.step{ border-top:2px solid var(--ink); padding-top:24px; }
+.step-num{ font-size:80px; line-height:1; color:var(--accent); margin-bottom:12px; }
+.step h3{ font-family:'Fraunces', serif; font-size:24px; font-weight:600; margin:0 0 10px; }
+.step p{ color:var(--ink-2); font-size:15px; line-height:1.6; margin:0; }
+@media (max-width:800px){ .steps{ grid-template-columns:1fr; } }
+
+/* ============ NEWSLETTER ============ */
+.newsletter{
+  background:var(--ink);
+  color:var(--paper);
+  padding:80px 32px;
+  text-align:center;
+}
+.newsletter h2{
+  font-size:clamp(30px, 4vw, 48px);
+  max-width:800px;
+  margin:0 auto 30px;
+  line-height:1.1;
+  color:var(--paper);
+  font-weight:500;
+}
+.newsletter h2 em{ color:var(--accent-4); font-style:italic; }
+.newsletter-form{ display:flex; gap:10px; max-width:480px; margin:0 auto; flex-wrap:wrap; justify-content:center; }
+.newsletter-form input{
+  flex:1; min-width:240px;
+  height:52px; padding:0 20px;
+  background:var(--paper);
+  color:var(--ink);
+  border:1.5px solid var(--paper);
+  border-radius:999px;
+  font-family:inherit; font-size:15px;
+  outline:none;
+}
+.newsletter-form .btn-primary{ background:var(--accent-4); color:var(--ink); }
+.newsletter-form .btn-primary:hover{ background:var(--accent-2); color:#fff; }
 {% endblock %}
 
 {% block content %}
+<main>
 
-<!-- THREE.JS CANVAS -->
-<canvas id="three-canvas"></canvas>
-<div class="bg-overlay"></div>
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <svg class="hero-scene" viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <defs>
+        <linearGradient id="gr1" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#2a2a28" />
+          <stop offset="1" stop-color="#0d0d0c" />
+        </linearGradient>
+        <pattern id="grain" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+          <rect width="4" height="4" fill="#1a1a18" />
+          <circle cx="1" cy="1" r=".5" fill="#333" />
+        </pattern>
+      </defs>
+      <rect width="1400" height="700" fill="url(#gr1)" />
+      <rect width="1400" height="700" fill="url(#grain)" opacity=".4" />
+      <g opacity=".55" fill="#3a3a36">
+        <ellipse cx="420" cy="520" rx="260" ry="160" />
+        <ellipse cx="640" cy="360" rx="190" ry="210" />
+        <path d="M 540 280 Q 640 160 720 280 Q 750 360 680 420 Q 600 480 540 380 Z" />
+        <rect x="900" y="180" width="120" height="320" rx="8" opacity=".6" />
+        <rect x="1040" y="260" width="90" height="240" rx="6" opacity=".5" />
+      </g>
+      <g opacity=".35">
+        <rect x="0" y="30" width="1400" height="32" fill="#161614" />
+        <rect x="0" y="638" width="1400" height="32" fill="#161614" />
+      </g>
+    </svg>
 
-<!-- CONTENT -->
-<div class="relative z-10 min-h-screen flex flex-col">
+    <div class="hero-wordmark">
+      <span class="wordmark">lamarca</span>
+      <span class="wordmark-trademark">™</span>
+    </div>
 
-  <!-- NAV -->
-  <nav class="glass-nav w-full sticky top-0 z-50">
-    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-      <span class="text-xl font-bold tracking-tight gradient-text">Lamarca</span>
-      <div class="flex items-center gap-3">
-        <a href="{% url 'login' %}" class="nav-link text-sm font-medium">Sign in</a>
-        <a href="{% url 'register' %}" class="text-sm font-semibold glow-btn text-white px-4 py-2 rounded-xl">
-          Get started
-        </a>
+    <div class="hero-content">
+      <div class="hero-desc">
+        <p>
+          The editorial trade school for every YouTube video
+          <br /> you've been meaning to write about. Paste a link,
+          <br /> get a draft that reads like a human wrote it.
+        </p>
+        <a href="#what" class="hero-cta">What's Lamarca? →</a>
       </div>
-    </div>
-  </nav>
-
-  <!-- HERO -->
-  <section class="max-w-5xl mx-auto px-6 pt-24 sm:pt-32 pb-12 text-center">
-
-    <div class="anim-fade-up anim-d1 inline-flex items-center gap-2 shimmer-badge text-xs font-semibold px-4 py-2 rounded-full mb-8 tracking-wide uppercase" style="color: rgba(167,139,250,0.9);">
-      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-      </svg>
-      Powered by AI
-    </div>
-
-    <h1 class="anim-fade-up anim-d2 text-6xl sm:text-8xl font-extrabold tracking-tight leading-none gradient-text pb-2">
-      Lamarca
-    </h1>
-
-    <p class="anim-fade-up anim-d3 mt-4 text-2xl sm:text-3xl font-semibold tracking-tight" style="color: rgba(255,255,255,0.85);">
-      AI Blog Generator
-    </p>
-
-    <p class="anim-fade-up anim-d4 mt-5 text-lg max-w-xl mx-auto leading-relaxed" style="color: rgba(255,255,255,0.4);">
-      Paste any YouTube link and get a fully written, polished blog post in seconds.
-    </p>
-  </section>
-
-  <!-- INPUT CARD -->
-  <section class="max-w-3xl mx-auto px-6 pb-24 w-full">
-    <div class="anim-fade-up anim-d5 glass-card p-8">
-
-      <label for="youtube-url" class="block text-sm font-semibold mb-3" style="color: rgba(255,255,255,0.7);">
-        YouTube Video URL
-      </label>
-
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <svg class="w-5 h-5" style="color: rgba(255,255,255,0.25);" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.498 6.186a2.994 2.994 0 00-2.107-2.117C19.379 3.5 12 3.5 12 3.5s-7.379 0-9.391.569A2.994 2.994 0 00.502 6.186 31.37 31.37 0 000 12a31.37 31.37 0 00.502 5.814 2.994 2.994 0 002.107 2.117C4.621 20.5 12 20.5 12 20.5s7.379 0 9.391-.569a2.994 2.994 0 002.107-2.117A31.37 31.37 0 0024 12a31.37 31.37 0 00-.502-5.814zM9.75 15.521V8.479L15.5 12l-5.75 3.521z"/>
-            </svg>
-          </span>
-          <input
-            id="youtube-url"
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            class="glass-input w-full pl-12 pr-4 py-3.5 rounded-xl text-sm"
-          />
+      <form class="url-form big" id="hero-url-form">
+        <div class="url-field">
+          <span class="url-icon">▶</span>
+          <input type="url" id="hero-url" placeholder="paste a youtube link…" required />
         </div>
-        <button
-          id="generate-btn"
-          class="flex items-center justify-center gap-2 px-6 py-3.5 glow-btn text-white text-sm font-semibold rounded-xl whitespace-nowrap cursor-pointer"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-          Generate Blog
-        </button>
-      </div>
-
-      <p class="mt-3 text-xs" style="color: rgba(255,255,255,0.2);">
-        Works with any public YouTube video. Supports youtube.com and youtu.be links.
-      </p>
+        <button type="submit" class="btn-primary">Generate draft →</button>
+      </form>
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="max-w-5xl mx-auto px-6 pb-28 w-full">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-
-      <div class="anim-fade-up anim-d5 anim-float feature-card glass-card p-6 text-center">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(139,92,246,0.12);">
-          <svg class="w-6 h-6" style="color: #a78bfa;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-        </div>
-        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">Lightning Fast</h3>
-        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Generate polished blog posts from any YouTube video in seconds.</p>
-      </div>
-
-      <div class="anim-fade-up anim-d6 anim-float-2 feature-card glass-card p-6 text-center">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(99,102,241,0.12);">
-          <svg class="w-6 h-6" style="color: #818cf8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-          </svg>
-        </div>
-        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">AI Powered</h3>
-        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Advanced AI creates natural, engaging content that reads beautifully.</p>
-      </div>
-
-      <div class="anim-fade-up anim-d7 anim-float-3 feature-card glass-card p-6 text-center">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4" style="background: rgba(168,85,247,0.12);">
-          <svg class="w-6 h-6" style="color: #c084fc;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-          </svg>
-        </div>
-        <h3 class="text-base font-bold mb-2" style="color: rgba(255,255,255,0.9);">Any Video</h3>
-        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">Works with any public YouTube video. All URL formats and languages supported.</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer style="border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto;">
-    <div class="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <span class="text-sm font-bold gradient-text">Lamarca</span>
-      <span class="text-xs" style="color: rgba(255,255,255,0.2);">&copy; 2026 Lamarca AI. All rights reserved.</span>
-    </div>
-  </footer>
-
-</div>
-
-<!-- ADMIN FLOATING BUTTON -->
-<button id="admin-toggle"
-  class="fixed bottom-6 right-6 z-50 flex items-center gap-2 glow-btn text-white text-sm font-semibold px-5 py-3 rounded-2xl cursor-pointer">
-  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-  </svg>
-  Admin
-</button>
-
-<!-- ADMIN MODAL BACKDROP -->
-<div id="admin-backdrop"
-  class="fixed inset-0 z-50 hidden items-center justify-center"
-  style="background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity 0.2s;">
-
-  <div id="admin-modal"
-    class="relative modal-glass w-full max-w-sm mx-4 rounded-3xl p-8 flex flex-col gap-6"
-    style="transform: translateY(24px); opacity: 0; transition: transform 0.25s cubic-bezier(.4,0,.2,1), opacity 0.25s;">
-
-    <!-- Close -->
-    <button id="admin-close"
-      class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full transition cursor-pointer"
-      style="color: rgba(255,255,255,0.4);"
-      onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'"
-      onmouseout="this.style.color='rgba(255,255,255,0.4)';this.style.background='transparent'">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-
-    <!-- Header -->
-    <div class="text-center">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3" style="background: rgba(139,92,246,0.15);">
-        <svg class="w-6 h-6" style="color: #a78bfa;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-        </svg>
-      </div>
-      <h2 class="text-xl font-bold" style="color: rgba(255,255,255,0.95);">Admin Access</h2>
-      <p class="text-sm mt-1" style="color: rgba(255,255,255,0.4);">Create an account or sign in to continue</p>
-    </div>
-
-    <div style="border-top: 1px solid rgba(255,255,255,0.08);"></div>
-
-    <!-- Actions -->
-    <div class="flex flex-col gap-3">
-      <a href="{% url 'register' %}"
-        class="flex items-center gap-3 w-full px-5 py-4 glow-btn text-white font-semibold text-sm rounded-2xl cursor-pointer" style="animation: none;">
-        <span class="flex items-center justify-center w-8 h-8 rounded-xl" style="background: rgba(255,255,255,0.15);">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-          </svg>
-        </span>
-        <div>
-          <div>Create account</div>
-          <div class="text-xs font-normal mt-0.5" style="color: rgba(255,255,255,0.5);">Register with email verification</div>
-        </div>
-        <svg class="w-4 h-4 ml-auto opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
-      </a>
-
-      <a href="{% url 'login' %}"
-        class="flex items-center gap-3 w-full px-5 py-4 font-semibold text-sm rounded-2xl transition-all duration-150 cursor-pointer"
-        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8);"
-        onmouseover="this.style.background='rgba(255,255,255,0.08)'"
-        onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-        <span class="flex items-center justify-center w-8 h-8 rounded-xl" style="background: rgba(255,255,255,0.08);">
-          <svg class="w-4 h-4" style="color: rgba(255,255,255,0.6);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-          </svg>
-        </span>
-        <div>
-          <div>Sign in</div>
-          <div class="text-xs font-normal mt-0.5" style="color: rgba(255,255,255,0.3);">Access your existing account</div>
-        </div>
-        <svg class="w-4 h-4 ml-auto" style="opacity: 0.3;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
-      </a>
+  <!-- ===== MARQUEE ===== -->
+  <div class="marquee">
+    <div class="marquee-track">
+      {% for t in "abc" %}
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Free while in beta</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Now supporting long-form</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>5 voices</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Markdown · HTML · plain</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Built for writers, not robots</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Claim-checked drafts</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Exports to Substack, Ghost, Medium</span></span>
+      {% endfor %}
     </div>
   </div>
-</div>
 
-<!-- ==================== SCRIPTS ==================== -->
+  <!-- ===== FEATURED DRAFT ===== -->
+  <section class="featured">
+    <div class="featured-left">
+      <div class="dept-label">Today's featured draft</div>
+      <h2 class="fraunces">"I watched a 40-minute video on <em>attention heads</em> and got back a blog I actually wanted to read."</h2>
+      <div class="byline">— Sonia K., Tuesday</div>
+      <a href="{% url 'dashboard' %}" class="read-link">Read the draft →</a>
+    </div>
+    <div class="featured-right">
+      <a href="{% url 'dashboard' %}" class="featured-cover">
+        <div class="cover-kicker mono">lamarca · vol. 7</div>
+        <div class="cover-title caveat">What the<br/>transformer<br/>actually does</div>
+        <div class="cover-meta mono">3 min read · from a 12:04 video</div>
+        <span class="cover-stamp">✦ featured ✦</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== DRAFT GALLERY ===== -->
+  <section class="gallery" id="what">
+    <div class="gallery-head">
+      <div>
+        <div class="dept-label">Drafts made with Lamarca this week</div>
+        <h2 class="fraunces">Browse the latest<br/><em>reader-ready</em> drafts.</h2>
+      </div>
+      <div class="filter-row">
+        <button class="chip on">All</button>
+        <button class="chip">Essays</button>
+        <button class="chip">Technical</button>
+        <button class="chip">How-tos</button>
+        <button class="chip">Interviews</button>
+        <button class="chip">News</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <article class="draft-card big">
+        <div class="draft-thumb" style="background:#e8f1ff;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">12:04</span>
+            <div class="draft-headline caveat" style="color:#1a3a7a;">The
+Transformer</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Deep Dive</div>
+          <div class="draft-title">What the transformer actually does</div>
+          <div class="draft-byline"><span>By Lex Paulson</span><span class="draft-tag">Essay</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#fff3d9;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">08:22</span>
+            <div class="draft-headline fraunces" style="color:#7a4a10;">decoder
+history</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">History</div>
+          <div class="draft-title">A short history of the decoder</div>
+          <div class="draft-byline"><span>By Ida Bel</span><span class="draft-tag">Essay</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#f2ece1;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">06:11</span>
+            <div class="draft-headline caveat" style="color:#3a3530;">seq2seq
+✕</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Opinion</div>
+          <div class="draft-title">Why we stopped using seq2seq</div>
+          <div class="draft-byline"><span>By R. Kato</span><span class="draft-tag">Essay</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#dfe9df;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">14:45</span>
+            <div class="draft-headline fraunces" style="color:#2a4a2a;">LoRA,
+explained</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">How-to</div>
+          <div class="draft-title">LoRA, in plain English</div>
+          <div class="draft-byline"><span>By Minh Tran</span><span class="draft-tag">Technical</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#ffe1e1;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">05:40</span>
+            <div class="draft-headline caveat" style="color:#7a2020;">Token
+Oracle</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Explainer</div>
+          <div class="draft-title">Tokenizers: what you're feeding the model</div>
+          <div class="draft-byline"><span>By Jo Alvarez</span><span class="draft-tag">How-to</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card tall">
+        <div class="draft-thumb" style="background:#f5e7c4;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">09:36</span>
+            <div class="draft-headline fraunces" style="color:#1a1a18;">context
+windows</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Technical</div>
+          <div class="draft-title">Why context windows grew 100×</div>
+          <div class="draft-byline"><span>By Ana Lu</span><span class="draft-tag">Technical</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#e5e0f2;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">18:10</span>
+            <div class="draft-headline fraunces" style="color:#3a2a6a;">RLHF
+&you</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Deep Dive</div>
+          <div class="draft-title">RLHF demystified</div>
+          <div class="draft-byline"><span>By S. Park</span><span class="draft-tag">Essay</span></div>
+        </div>
+      </article>
+
+      <article class="draft-card">
+        <div class="draft-thumb" style="background:#1a1a18;">
+          <div class="draft-thumb-inner">
+            <span class="draft-play">▶</span>
+            <span class="draft-duration mono">11:02</span>
+            <div class="draft-headline caveat" style="color:#f5e7c4;">dataset
+curationist</div>
+          </div>
+        </div>
+        <div class="draft-meta">
+          <div class="draft-kicker mono">Interview</div>
+          <div class="draft-title">A conversation with a data-set curator</div>
+          <div class="draft-byline"><span>By Fern Holt</span><span class="draft-tag">Interviews</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== QUOTE SLAB ===== -->
+  <section class="quote-slab">
+    <span class="qmark">"</span>
+    <p class="fraunces">
+      Lamarca reads the video, then writes about it the way you would —
+      lede, structure, pull quotes, and a voice you can tune. Not a
+      summary. A <em>real piece</em>.
+    </p>
+    <div class="byline">— The Editors</div>
+  </section>
+
+  <!-- ===== TICKER TAPES ===== -->
+  <div class="tape-stack">
+    <div class="tape-row" style="background:#1a1a18;">
+      <div class="tape-track">
+        {% for t in "abc" %}
+        <span class="tape-item" style="color:#f5e7c4;">Lamarca ★ YouTube-to-blog <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#f5e7c4;">5,400 drafts and counting <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#f5e7c4;">Works with any video URL <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#f5e7c4;">Free first 5 drafts <span class="tape-dot">●</span></span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="tape-row rev" style="background:#e8d9b0;">
+      <div class="tape-track">
+        {% for t in "abc" %}
+        <span class="tape-item" style="color:#1a1a18;">No prompt engineering required <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#1a1a18;">Exports to Substack, Ghost, Medium <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#1a1a18;">Claim-checked against the transcript <span class="tape-dot">●</span></span>
+        <span class="tape-item" style="color:#1a1a18;">Built for writers, not robots <span class="tape-dot">●</span></span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="howto" id="pricing">
+    <div class="dept-label">How Lamarca works</div>
+    <h2 class="fraunces">Three steps.<br/>One <em>actually good</em> draft.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num caveat">01</div>
+        <h3>Paste the URL</h3>
+        <p>Any YouTube link. We fetch, transcribe, and diarize if there are multiple speakers.</p>
+      </div>
+      <div class="step">
+        <div class="step-num caveat">02</div>
+        <h3>Pick a voice</h3>
+        <p>Substack, product blog, technical, casual — or train on three samples of your own writing.</p>
+      </div>
+      <div class="step">
+        <div class="step-num caveat">03</div>
+        <h3>Edit and publish</h3>
+        <p>Tweak in the editor. Export to Markdown, HTML, or paste straight into your CMS.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NEWSLETTER ===== -->
+  <section class="newsletter">
+    <h2 class="fraunces">Every Wednesday, <em>one good draft</em> lands in your inbox.</h2>
+    <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Subscribed (demo)');">
+      <input type="email" placeholder="your@email.com" required />
+      <button type="submit" class="btn-primary">Subscribe ✦</button>
+    </form>
+  </section>
+
+  <footer class="footer">
+    <div>
+      <span class="caveat footer-mark">lamarca</span>
+      <div class="mono">©2026 — Made for writers</div>
+    </div>
+    <div class="footer-links">
+      <a href="#what">About</a>
+      <a href="#what">Voices</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#">Privacy</a>
+      <a href="#">Contact</a>
+    </div>
+  </footer>
+</main>
+
 <script>
-(function() {
-  /* ---------- THREE.JS SCENE ---------- */
-  var canvas = document.getElementById('three-canvas');
-  if (!canvas || typeof THREE === 'undefined') return;
-
-  var mobile = window.innerWidth < 768;
-  var GRID   = mobile ? 30 : 50;
-  var STARS  = mobile ? 400 : 1200;
-  var SPACING = 0.5;
-
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: !mobile });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  var scene  = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 120);
-  camera.position.set(0, 2, 18);
-
-  /* --- Particle wave --- */
-  var waveCount = GRID * GRID;
-  var waveGeo   = new THREE.BufferGeometry();
-  var wPos      = new Float32Array(waveCount * 3);
-  var wCol      = new Float32Array(waveCount * 3);
-
-  for (var i = 0; i < GRID; i++) {
-    for (var j = 0; j < GRID; j++) {
-      var idx = (i * GRID + j) * 3;
-      wPos[idx]     = (i - GRID / 2) * SPACING;
-      wPos[idx + 1] = 0;
-      wPos[idx + 2] = (j - GRID / 2) * SPACING;
-      var t = j / GRID;
-      wCol[idx]     = 0.55 + t * 0.1;
-      wCol[idx + 1] = 0.36 - t * 0.2;
-      wCol[idx + 2] = 0.96;
-    }
-  }
-
-  waveGeo.setAttribute('position', new THREE.BufferAttribute(wPos, 3));
-  waveGeo.setAttribute('color',    new THREE.BufferAttribute(wCol, 3));
-
-  var waveMat = new THREE.PointsMaterial({
-    size: mobile ? 0.07 : 0.08,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.65,
-    sizeAttenuation: true
+  // Hero form — carry URL to dashboard (or register if not logged in)
+  document.getElementById('hero-url-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var url = document.getElementById('hero-url').value.trim();
+    if (!url) return;
+    try { sessionStorage.setItem('lm_pending_url', url); } catch(_){}
+    {% if user.is_authenticated %}
+      window.location.href = '{% url "dashboard" %}';
+    {% else %}
+      window.location.href = '{% url "register" %}';
+    {% endif %}
   });
 
-  var wave = new THREE.Points(waveGeo, waveMat);
-  wave.position.y = -5;
-  scene.add(wave);
-
-  /* --- Floating wireframe shapes --- */
-  var wireMat1 = new THREE.MeshBasicMaterial({ color: 0x7c3aed, wireframe: true, transparent: true, opacity: 0.12 });
-  var wireMat2 = new THREE.MeshBasicMaterial({ color: 0x6366f1, wireframe: true, transparent: true, opacity: 0.10 });
-  var wireMat3 = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.10 });
-
-  var ico1 = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5, 1), wireMat1);
-  ico1.position.set(-10, 4, -8);
-  scene.add(ico1);
-
-  var ico2 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.8, 1), wireMat2);
-  ico2.position.set(9, -1, -5);
-  scene.add(ico2);
-
-  if (!mobile) {
-    var torus = new THREE.Mesh(new THREE.TorusGeometry(2, 0.4, 12, 40), wireMat3);
-    torus.position.set(7, 6, -10);
-    scene.add(torus);
-  }
-
-  /* --- Stars --- */
-  var starGeo = new THREE.BufferGeometry();
-  var sPos    = new Float32Array(STARS * 3);
-  for (var s = 0; s < STARS; s++) {
-    sPos[s * 3]     = (Math.random() - 0.5) * 80;
-    sPos[s * 3 + 1] = (Math.random() - 0.5) * 80;
-    sPos[s * 3 + 2] = (Math.random() - 0.5) * 80;
-  }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-  var starMat = new THREE.PointsMaterial({ size: 0.06, color: 0xffffff, transparent: true, opacity: 0.45 });
-  var stars   = new THREE.Points(starGeo, starMat);
-  scene.add(stars);
-
-  /* --- Mouse parallax --- */
-  var mx = 0, my = 0;
-  window.addEventListener('mousemove', function(e) {
-    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-  });
-
-  /* --- Animate --- */
-  function animate() {
-    requestAnimationFrame(animate);
-    var t = performance.now() * 0.001;
-
-    /* Wave motion */
-    var pos = wave.geometry.attributes.position.array;
-    for (var i = 0; i < GRID; i++) {
-      for (var j = 0; j < GRID; j++) {
-        var idx = (i * GRID + j) * 3;
-        var x = (i - GRID / 2) * SPACING;
-        var z = (j - GRID / 2) * SPACING;
-        pos[idx + 1] = Math.sin(x * 0.4 + t * 0.8) * 0.7 + Math.cos(z * 0.3 + t * 0.6) * 0.5;
-      }
-    }
-    wave.geometry.attributes.position.needsUpdate = true;
-
-    /* Rotate shapes */
-    ico1.rotation.x += 0.002;
-    ico1.rotation.y += 0.003;
-    ico2.rotation.x -= 0.003;
-    ico2.rotation.z += 0.002;
-    if (torus) {
-      torus.rotation.x += 0.0015;
-      torus.rotation.y += 0.003;
-    }
-
-    /* Stars drift */
-    stars.rotation.y += 0.00015;
-    stars.rotation.x += 0.00005;
-
-    /* Camera parallax */
-    camera.position.x += (mx * 1.5 - camera.position.x) * 0.015;
-    camera.position.y += (-my * 0.8 + 2 - camera.position.y) * 0.015;
-    camera.lookAt(0, 0, 0);
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  /* Resize */
-  window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-})();
-</script>
-
-<script>
-  /* ---------- UI LOGIC ---------- */
-  var btn   = document.getElementById('generate-btn');
-  var input = document.getElementById('youtube-url');
-
-  btn.addEventListener('click', function() {
-    var url = input.value.trim();
-    if (!url) {
-      input.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.3)';
-      input.style.borderColor = 'rgba(239,68,68,0.5)';
-      setTimeout(function() {
-        input.style.boxShadow = '';
-        input.style.borderColor = 'rgba(255,255,255,0.1)';
-      }, 2000);
-      return;
-    }
-    openModal();
-  });
-
-  /* Admin modal */
-  var adminToggle   = document.getElementById('admin-toggle');
-  var adminBackdrop = document.getElementById('admin-backdrop');
-  var adminModal    = document.getElementById('admin-modal');
-  var adminClose    = document.getElementById('admin-close');
-
-  function openModal() {
-    adminBackdrop.classList.remove('hidden');
-    adminBackdrop.classList.add('flex');
-    requestAnimationFrame(function() {
-      adminBackdrop.style.opacity = '1';
-      adminModal.style.transform  = 'translateY(0)';
-      adminModal.style.opacity    = '1';
+  // Gallery filter chips (visual only — all cards stay visible)
+  document.querySelectorAll('.chip').forEach(function(c) {
+    c.addEventListener('click', function() {
+      document.querySelectorAll('.chip').forEach(function(x) { x.classList.remove('on'); });
+      c.classList.add('on');
     });
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeModal() {
-    adminBackdrop.style.opacity = '0';
-    adminModal.style.transform  = 'translateY(24px)';
-    adminModal.style.opacity    = '0';
-    setTimeout(function() {
-      adminBackdrop.classList.add('hidden');
-      adminBackdrop.classList.remove('flex');
-      document.body.style.overflow = '';
-    }, 250);
-  }
-
-  adminToggle.addEventListener('click', openModal);
-  adminClose.addEventListener('click', closeModal);
-  adminBackdrop.addEventListener('click', function(e) {
-    if (e.target === adminBackdrop) closeModal();
-  });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
   });
 </script>
-
 {% endblock %}

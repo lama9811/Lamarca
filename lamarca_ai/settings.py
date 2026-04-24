@@ -23,7 +23,15 @@ _load_env()
 # ── Security ──────────────────────────────────────────────
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-dev-key-change-in-prod')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost,.onrender.com').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost,.onrender.com,.run.app,.vercel.app').split(',')
+
+# Django needs these for POST requests over HTTPS behind a proxy (Cloud Run, Render, Vercel)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'https://*.run.app',
+    'https://*.vercel.app',
+]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ── Apps ──────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -122,8 +130,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', '')
 
-# ── OpenAI ─────────────────────────────────────────────────
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+# ── Google Gemini ──────────────────────────────────────────
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
+# ── Google Sign-In (OAuth Client ID from GCP Console) ──────
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
+# Only allow signups from @gmail.com addresses
+ALLOWED_EMAIL_DOMAIN = 'gmail.com'
 
 # ── Supadata (YouTube transcript API) ──────────────────────────────────────
 SUPADATA_API_KEY = os.environ.get('SUPADATA_API_KEY', '')

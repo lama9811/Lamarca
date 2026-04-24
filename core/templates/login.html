@@ -1,73 +1,77 @@
 {% extends "base.html" %}
 
+{% block title %}Log in — Lamarca{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-slate-50 flex flex-col">
+<main class="auth-page">
+  <div class="auth-card">
+    <div class="auth-stamp caveat">welcome back</div>
+    <h1 class="fraunces">Pick up where you left off.</h1>
+    <p class="auth-sub">Your drafts are waiting.</p>
 
-  <!-- NAV -->
-  <nav class="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
-    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="{% url 'home' %}" class="text-xl font-bold tracking-tight text-slate-900">Lamarca</a>
-      <a href="{% url 'register' %}" class="text-sm font-medium text-violet-600 hover:text-violet-700 transition">Create account</a>
+    <form method="POST" class="auth-form" novalidate>
+      {% csrf_token %}
+      <label class="auth-label">Email</label>
+      <input class="auth-input" type="email" name="email" required value="{{ request.POST.email }}" placeholder="you@example.com" />
+      <label class="auth-label">Password</label>
+      <input class="auth-input" type="password" name="password" required placeholder="your password" />
+      <button type="submit" class="btn-primary btn-block">Log in →</button>
+    </form>
+
+    {% if google_client_id %}
+    <div class="auth-divider"><span>or continue with</span></div>
+    <div id="g_id_onload"
+         data-client_id="{{ google_client_id }}"
+         data-callback="onGoogleSignIn"
+         data-auto_prompt="false"></div>
+    <div class="google-wrap">
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="large"
+           data-text="signin_with"
+           data-shape="pill"
+           data-theme="outline"
+           data-logo_alignment="left"
+           data-width="340"></div>
     </div>
-  </nav>
+    <div class="google-err" id="google-err"></div>
+    {% endif %}
 
-  <div class="flex-1 flex items-center justify-center px-4 py-16">
-    <div class="w-full max-w-md">
+    <p class="auth-alt">New here? <a href="{% url 'register' %}">Create an account</a></p>
+  </div>
 
-      <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 mb-4">
-          <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900">Welcome back</h1>
-        <p class="text-slate-500 text-sm mt-1">Sign in to your Lamarca account</p>
-      </div>
-
-      {% if messages %}
-        {% for message in messages %}
-          <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
-            {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
-            {% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 border border-amber-200
-            {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-
-      <div class="bg-white rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-100 p-8">
-        <form method="POST" novalidate>
-          {% csrf_token %}
-
-          <div class="space-y-5">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email address</label>
-              <input type="email" name="email" value="{{ request.POST.email }}" required
-                placeholder="you@example.com"
-                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"/>
-            </div>
-
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
-              <input type="password" name="password" required
-                placeholder="Your password"
-                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"/>
-            </div>
-          </div>
-
-          <button type="submit"
-            class="mt-6 w-full py-3.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm shadow-violet-200 cursor-pointer">
-            Sign in
-          </button>
-        </form>
-
-        <p class="text-center text-sm text-slate-500 mt-5">
-          Don't have an account?
-          <a href="{% url 'register' %}" class="text-violet-600 font-semibold hover:underline">Sign up</a>
-        </p>
-      </div>
-
+  <div class="auth-side">
+    <div class="tear">
+      <div class="tear-kicker mono">returning reader</div>
+      <div class="tear-title caveat">missed you</div>
+      <p class="tear-body">Your last draft was waiting. Let's finish it.</p>
+      <div class="tear-foot mono">detach here ✂ — — — — — —</div>
     </div>
   </div>
-</div>
+</main>
+
+{% if google_client_id %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  function getCsrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+  function onGoogleSignIn(response) {
+    var err = document.getElementById('google-err');
+    err.textContent = '';
+    fetch('{% url "google_signin" %}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+      body: JSON.stringify({credential: response.credential}),
+    })
+    .then(function(r) { return r.json().then(function(d) { return {status: r.status, body: d}; }); })
+    .then(function(res) {
+      if (res.body.redirect) window.location.href = res.body.redirect;
+      else err.textContent = res.body.error || 'Sign-in failed.';
+    })
+    .catch(function() { err.textContent = 'Network error. Please try again.'; });
+  }
+</script>
+{% endif %}
 {% endblock %}
