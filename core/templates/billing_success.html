@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Payment received — Lamarca{% endblock %}
+
+{% block extra_css %}
+.thanks{
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 100px 32px;
+  text-align: center;
+}
+.thanks-stamp{
+  font-size: 32px;
+  color: var(--accent-3);
+  transform: rotate(-4deg);
+  display: inline-block;
+  background: var(--cream);
+  padding: 6px 22px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 var(--ink);
+  margin-bottom: 30px;
+}
+.thanks h1{
+  font-size: clamp(44px, 6vw, 76px);
+  line-height: 1;
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.thanks-sub{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 19px;
+  margin: 0 0 40px;
+}
+.thanks-balance{
+  display: inline-block;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 18px 28px;
+  box-shadow: 4px 4px 0 var(--ink);
+  margin-bottom: 36px;
+}
+.thanks-balance .num{
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 600;
+}
+.thanks-balance .label{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.thanks-cta{ display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.thanks-note{
+  margin-top: 30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+{% endblock %}
+
+{% block content %}
+<main class="thanks">
+  <div class="thanks-stamp caveat">paid in full</div>
+  <h1 class="fraunces">Thank you.</h1>
+  <p class="thanks-sub">Stripe is finalizing your payment. Your credits should appear in a moment.</p>
+
+  <div class="thanks-balance">
+    <div class="num" id="balance-num">{{ profile.total_remaining }}</div>
+    <div class="label">credits available</div>
+  </div>
+
+  <div class="thanks-cta">
+    <a href="{% url 'dashboard' %}" class="btn-primary">Back to your desk ✦</a>
+    <a href="{% url 'billing' %}" class="btn-ghost">Buy another pack</a>
+  </div>
+
+  <p class="thanks-note">
+    payment confirmation arrives via email · webhook may take ~10 seconds
+  </p>
+</main>
+
+<script>
+  // Webhooks can lag a few seconds. Poll the balance once after 4s as a UX nicety.
+  setTimeout(async () => {
+    try {
+      const res = await fetch('{% url "billing" %}', {headers: {'Accept': 'text/html'}});
+      const html = await res.text();
+      const m = html.match(/balance-num[^>]*>(\d+)/);
+      if (m) document.getElementById('balance-num').textContent = m[1];
+    } catch (e) { /* ignore */ }
+  }, 4000);
+</script>
+{% endblock %}

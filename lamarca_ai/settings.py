@@ -144,3 +144,36 @@ ALLOWED_EMAIL_DOMAIN = 'gmail.com'
 
 # ── Supadata (YouTube transcript API) ──────────────────────────────────────
 SUPADATA_API_KEY = os.environ.get('SUPADATA_API_KEY', '')
+
+# ── Stripe (credit packs) ──────────────────────────────────────────────────
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# Each entry maps a Stripe Price ID → number of generation credits granted.
+STRIPE_CREDIT_PACKS = [
+    {
+        'price_id': os.environ.get('STRIPE_PRICE_1_CREDIT', ''),
+        'credits': 1,
+        'price_label': '$1',
+        'tagline': 'One draft, one dollar.',
+    },
+    {
+        'price_id': os.environ.get('STRIPE_PRICE_5_CREDITS', ''),
+        'credits': 5,
+        'price_label': '$5',
+        'tagline': 'Five drafts. Same price as a coffee.',
+    },
+    {
+        'price_id': os.environ.get('STRIPE_PRICE_12_CREDITS', ''),
+        'credits': 12,
+        'price_label': '$10',
+        'tagline': 'Twelve drafts. Two free on the house.',
+        'badge': 'Best value',
+    },
+]
+# Lookup for the webhook: price_id → credits
+STRIPE_PRICE_TO_CREDITS = {p['price_id']: p['credits'] for p in STRIPE_CREDIT_PACKS if p['price_id']}
+
+# Free generations new users get before they need to buy credits
+FREE_GENERATIONS = 3
