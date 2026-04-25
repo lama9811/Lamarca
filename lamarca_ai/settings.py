@@ -120,6 +120,9 @@ USE_TZ = True
 # ── Static files ───────────────────────────────────────────
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Vercel doesn't run collectstatic, so let WhiteNoise serve directly
+# from each app's static/ directory via Django's finders.
+WHITENOISE_USE_FINDERS = True
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
