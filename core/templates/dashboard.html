@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% load static tailwind_tags %}
+
+{% block extra_head %}
+{% tailwind_css %}
+{% endblock %}
 
 {% block content %}
 
