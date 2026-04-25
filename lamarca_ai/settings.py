@@ -33,6 +33,10 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Google Sign-In's popup posts the credential back via window.opener.postMessage.
+# Django's default COOP of 'same-origin' breaks that. Allow popups to keep their opener.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
 # ── Apps ──────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
