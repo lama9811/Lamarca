@@ -1,115 +1,148 @@
 {% extends "base.html" %}
-{% load static tailwind_tags %}
 
-{% block extra_head %}
-{% tailwind_css %}
+{% block title %}Your desk — Lamarca{% endblock %}
+
+{% block extra_css %}
+/* ============ DASHBOARD ============ */
+.desk{
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 60px 32px 100px;
+}
+.desk-stamp{
+  font-size: 28px;
+  color: var(--accent-2);
+  transform: rotate(-3deg);
+  display: inline-block;
+  background: var(--cream);
+  padding: 4px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-bottom: 22px;
+}
+.desk h1{
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1;
+  margin: 0 0 14px;
+  font-weight: 500;
+}
+.desk-sub{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 18px;
+  margin: 0 0 36px;
+  max-width: 560px;
+}
+.desk-hint{
+  margin-top: 14px;
+  color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.output-section{ margin-top: 48px; }
+
+.draft-card{
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 36px 40px;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.draft-head{
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 22px;
+  border-bottom: 1px dashed var(--rule);
+  padding-bottom: 14px;
+  gap: 16px;
+}
+.draft-kicker{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.draft-body{
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.draft-body h1{ font-size: 32px; line-height:1.15; margin:24px 0 12px; font-weight:600; }
+.draft-body h2{ font-size: 24px; line-height:1.2; margin:28px 0 10px; font-weight:600; }
+.draft-body h3{ font-size: 19px; margin:22px 0 8px; font-weight:600; }
+.draft-body p{ margin: 0 0 16px; }
+.draft-body ul, .draft-body ol{ margin: 0 0 16px; padding-left: 24px; }
+.draft-body li{ margin-bottom: 6px; }
+.draft-body strong{ font-weight: 600; color: var(--ink); }
+.draft-body em{ font-style: italic; }
+.draft-body a{ color: var(--accent); border-bottom: 1px solid var(--accent); }
+
+.spinner-line{
+  display: flex; align-items: center; gap: 14px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 18px;
+}
+.spinner-dot{
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  animation: lm-pulse 1.2s infinite ease-in-out;
+}
+@keyframes lm-pulse{
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.2); }
+}
+
+@media (max-width:760px){
+  .desk{ padding: 40px 20px 60px; }
+  .draft-card{ padding: 24px 20px; }
+  .draft-head{ flex-direction: column; align-items: flex-start; }
+}
 {% endblock %}
 
 {% block content %}
+<main class="desk">
+  <div class="desk-stamp caveat">your desk</div>
+  <h1 class="fraunces">Paste a link.<br/>Lift a draft.</h1>
+  <p class="desk-sub">Drop any YouTube URL below — we'll read the transcript and rewrite it as a blog post you'd actually publish.</p>
 
-<!-- NAV -->
-<nav class="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-    <span class="text-xl font-bold tracking-tight text-slate-900">Lamarca</span>
-    <div class="flex items-center gap-4">
-      <span class="text-sm text-slate-500 hidden sm:block">{{ user.email }}</span>
-      <a href="{% url 'logout' %}" class="text-sm font-semibold text-slate-600 hover:text-red-500 transition">Sign out</a>
+  <div class="url-form big">
+    <div class="url-field flex">
+      <span class="url-icon">▶</span>
+      <input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
     </div>
+    <button id="generate-btn" class="btn-primary">Generate ✦</button>
   </div>
-</nav>
+  <p class="desk-hint">supports youtube.com &amp; youtu.be · the video must have captions</p>
 
-<!-- HERO -->
-<section class="max-w-5xl mx-auto px-6 pt-14 pb-10 text-center">
-  <div class="inline-flex items-center gap-2 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-5 tracking-wide uppercase">
-    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-    </svg>
-    Powered by AI
-  </div>
-  <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">AI Blog Generator</h1>
-  <p class="mt-3 text-lg text-slate-500 max-w-xl mx-auto">Paste a YouTube link and get a polished blog post in seconds.</p>
-</section>
-
-<!-- INPUT CARD -->
-<section class="max-w-3xl mx-auto px-6 pb-16">
-  <div class="bg-white rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-100 p-8">
-    <label for="youtube-url" class="block text-sm font-semibold text-slate-700 mb-2">YouTube Video URL</label>
-    <div class="flex flex-col sm:flex-row gap-3">
-      <div class="relative flex-1">
-        <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-          <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.498 6.186a2.994 2.994 0 00-2.107-2.117C19.379 3.5 12 3.5 12 3.5s-7.379 0-9.391.569A2.994 2.994 0 00.502 6.186 31.37 31.37 0 000 12a31.37 31.37 0 00.502 5.814 2.994 2.994 0 002.107 2.117C4.621 20.5 12 20.5 12 20.5s7.379 0 9.391-.569a2.994 2.994 0 002.107-2.117A31.37 31.37 0 0024 12a31.37 31.37 0 00-.502-5.814zM9.75 15.521V8.479L15.5 12l-5.75 3.521z"/>
-          </svg>
-        </span>
-        <input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..."
-          class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"/>
+  <div id="output-section" class="output-section" style="display:none;">
+    <div id="loading-state" class="draft-card" style="display:none;">
+      <div class="spinner-line">
+        <span class="spinner-dot"></span>
+        Reading the transcript and writing your draft…
       </div>
-      <button id="generate-btn"
-        class="flex items-center justify-center gap-2 px-6 py-3.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm shadow-violet-200 whitespace-nowrap cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
-        Generate Blog
-      </button>
     </div>
-    <p class="mt-3 text-xs text-slate-400">Supports youtube.com and youtu.be links. Video must have captions enabled.</p>
-  </div>
-</section>
 
-<!-- OUTPUT -->
-<section id="output-section" class="max-w-3xl mx-auto px-6 pb-24 hidden">
-
-  <!-- Loading -->
-  <div id="loading-state" class="hidden">
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/60 p-10 flex flex-col items-center gap-4">
-      <div class="w-10 h-10 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin"></div>
-      <p class="text-slate-500 text-sm font-medium">Generating your blog post…</p>
+    <div id="error-state" class="messages" style="display:none; margin:0; padding:0;">
+      <div class="message error" id="error-message"></div>
     </div>
-  </div>
 
-  <!-- Error -->
-  <div id="error-state" class="hidden">
-    <div class="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-3">
-      <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <p id="error-message" class="text-sm text-red-700 font-medium"></p>
-    </div>
-  </div>
-
-  <!-- Result -->
-  <div id="result-state" class="hidden">
-    <div class="flex items-center justify-between mb-5">
-      <span class="text-xs text-slate-400 font-medium">Generated blog post</span>
-      <button id="copy-btn" class="flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-700 transition cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
-        </svg>
-        Copy
-      </button>
-    </div>
-    <article class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/60 p-8 sm:p-10">
-      <div id="blog-output" class="prose prose-slate prose-lg max-w-none
-        [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-slate-900 [&_h1]:mb-4
-        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-800 [&_h2]:mt-8 [&_h2]:mb-3
-        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-slate-700 [&_h3]:mt-6 [&_h3]:mb-2
-        [&_p]:text-slate-600 [&_p]:leading-relaxed [&_p]:mb-4
-        [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_li]:text-slate-600 [&_li]:mb-1
-        [&_strong]:text-slate-800 [&_strong]:font-semibold">
+    <div id="result-state" class="draft-card" style="display:none;">
+      <div class="draft-head">
+        <span class="draft-kicker">draft v.1 ✦ ready to publish</span>
+        <button id="copy-btn" class="btn-ghost">Copy</button>
       </div>
-    </article>
+      <article id="blog-output" class="draft-body"></article>
+    </div>
   </div>
-
-</section>
-
-<!-- FOOTER -->
-<footer class="border-t border-slate-200 bg-white">
-  <div class="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-    <span class="text-sm font-bold text-slate-900">Lamarca</span>
-    <span class="text-xs text-slate-400">&copy; 2026 Lamarca AI. All rights reserved.</span>
-  </div>
-</footer>
+</main>
 
 <script>
   const btn        = document.getElementById('generate-btn');
@@ -125,59 +158,47 @@
   function getCsrf() {
     return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? '';
   }
-
   function showState(state) {
-    [loading, errorBox, result].forEach(el => el.classList.add('hidden'));
-    if (state) state.classList.remove('hidden');
+    [loading, errorBox, result].forEach(el => el.style.display = 'none');
+    if (state) state.style.display = '';
   }
 
   btn.addEventListener('click', async () => {
     const url = input.value.trim();
-    if (!url) {
-      input.classList.add('ring-2', 'ring-red-400', 'border-transparent');
-      setTimeout(() => input.classList.remove('ring-2', 'ring-red-400', 'border-transparent'), 2000);
-      return;
-    }
+    if (!url) { input.focus(); return; }
 
-    outSection.classList.remove('hidden');
+    outSection.style.display = '';
     showState(loading);
-    outSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    outSection.scrollIntoView({behavior:'smooth', block:'start'});
+    btn.disabled = true;
 
     try {
       const res = await fetch('/api/generate/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrf(),
-        },
-        body: JSON.stringify({ url }),
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+        body: JSON.stringify({url}),
       });
-
       const data = await res.json();
-
       if (!res.ok || data.error) {
         errorMsg.textContent = data.error || 'Something went wrong. Please try again.';
         showState(errorBox);
         return;
       }
-
       blogOut.innerHTML = data.blog;
       showState(result);
-
-    } catch (err) {
+    } catch (e) {
       errorMsg.textContent = 'Network error. Please check your connection and try again.';
       showState(errorBox);
+    } finally {
+      btn.disabled = false;
     }
   });
 
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(blogOut.innerText).then(() => {
-      copyBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 18 4 13"></polyline></svg> Copied!`;
-      setTimeout(() => {
-        copyBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg> Copy`;
-      }, 2000);
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
     });
   });
 </script>
-
 {% endblock %}
