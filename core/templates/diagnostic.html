@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Diagnostic — Lamarca{% endblock %}
+
+{% block extra_css %}
+.diag{
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 60px 32px 100px;
+}
+.diag-stamp{
+  font-size: 28px;
+  color: var(--accent-2);
+  transform: rotate(-3deg);
+  display: inline-block;
+  background: var(--cream);
+  padding: 4px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-bottom: 22px;
+}
+.diag h1{
+  font-size: clamp(40px, 5vw, 60px);
+  line-height: 1;
+  margin: 0 0 14px;
+  font-weight: 500;
+}
+.diag-sub{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 18px;
+  margin: 0 0 36px;
+}
+.diag-summary{
+  padding: 18px 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  border: 1.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+}
+.diag-summary.ok{ background: #e3f3e7; border-color: var(--accent-3); color: var(--accent-3); }
+.diag-summary.fail{ background: #ffe4d9; border-color: var(--accent-2); color: var(--accent-2); }
+
+.diag-row{
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 16px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.diag-row .icon{
+  font-size: 22px;
+  line-height: 1;
+  margin-top: 2px;
+}
+.diag-row.ok .icon{ color: var(--accent-3); }
+.diag-row.fail .icon{ color: var(--accent-2); }
+.diag-row.skip .icon{ color: var(--ink-3); }
+.diag-row .name{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.diag-row .detail{
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.diag-row .fix{
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--cream);
+  border-left: 3px solid var(--accent-2);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink);
+}
+.diag-meta{
+  margin-top: 30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+{% endblock %}
+
+{% block content %}
+<main class="diag">
+  <div class="diag-stamp caveat">diagnostic</div>
+  <h1 class="fraunces">Stripe configuration check.</h1>
+  <p class="diag-sub">Live status of every Stripe env var on this server, plus a real API ping.</p>
+
+  {% if all_ok %}
+  <div class="diag-summary ok">
+    ✓ Everything looks good. The Buy buttons should work — go try one.
+  </div>
+  {% else %}
+  <div class="diag-summary fail">
+    ✗ Something's broken. Check the failing rows below — each one tells you exactly what to fix on Vercel.
+  </div>
+  {% endif %}
+
+  {% for row in rows %}
+  <div class="diag-row {{ row.status }}">
+    <div class="icon">
+      {% if row.status == 'ok' %}✓{% elif row.status == 'fail' %}✗{% else %}–{% endif %}
+    </div>
+    <div>
+      <div class="name">{{ row.name }}</div>
+      <div class="detail">{{ row.detail }}</div>
+      {% if row.fix %}<div class="fix">→ {{ row.fix }}</div>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="diag-meta">
+    canonical_host: {{ canonical_host }} ·
+    after fixing env vars on Vercel, click "Redeploy" then refresh this page.
+  </div>
+</main>
+{% endblock %}
