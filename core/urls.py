@@ -18,6 +18,7 @@ urlpatterns = [
     path('billing/', views.billing, name='billing'),
     path('billing/buy/', views.buy_credits, name='buy_credits'),
     path('billing/success/', views.billing_success, name='billing_success'),
+    path('billing/diagnostic/', views.diagnostic, name='diagnostic'),
     path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'),
 
     # API

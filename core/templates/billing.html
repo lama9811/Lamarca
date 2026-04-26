@@ -184,7 +184,7 @@
     btn.addEventListener('click', async () => {
       const priceId = btn.dataset.priceId;
       if (!priceId) {
-        errBox.textContent = 'This pack is not configured. Check STRIPE_PRICE_* env vars.';
+        errBox.innerHTML = 'This pack is not configured. <a href="{% url "diagnostic" %}" style="color:var(--accent);text-decoration:underline;">Run diagnostic →</a>';
         errBox.style.display = 'block';
         return;
       }
@@ -198,7 +198,7 @@
         });
         const data = await res.json();
         if (!res.ok || !data.url) {
-          errBox.textContent = data.error || 'Could not start checkout.';
+          errBox.innerHTML = (data.error || 'Could not start checkout.') + ' <a href="{% url "diagnostic" %}" style="color:var(--accent);text-decoration:underline;">Run diagnostic →</a>';
           errBox.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Buy ✦';
