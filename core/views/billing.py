@@ -52,9 +52,25 @@ def buy_credits(request):
             success_url=request.build_absolute_uri(reverse('billing_success')) + '?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=request.build_absolute_uri(reverse('billing')),
         )
-    except stripe.StripeError as e:
+    except stripe.AuthenticationError:
+        logger.exception('Stripe rejected our API key — STRIPE_SECRET_KEY env var is missing or wrong')
+        return JsonResponse(
+            {'error': 'Payment system is misconfigured. Please contact support.'},
+            status=503,
+        )
+    except stripe.InvalidRequestError as e:
+        logger.exception('Stripe rejected the price/session params')
+        # Surface only the user-facing message; never the raw error text.
+        return JsonResponse(
+            {'error': e.user_message or 'This credit pack is not available right now.'},
+            status=400,
+        )
+    except stripe.StripeError:
         logger.exception('Stripe checkout session creation failed')
-        return JsonResponse({'error': f'Payment error: {e.user_message or str(e)}'}, status=502)
+        return JsonResponse(
+            {'error': 'Payment service is temporarily unavailable. Please try again in a moment.'},
+            status=502,
+        )
 
     return JsonResponse({'url': session.url})
 
