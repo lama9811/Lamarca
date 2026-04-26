@@ -100,6 +100,40 @@
   50%      { opacity: 1;   transform: scale(1.2); }
 }
 
+.credit-strip{
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 22px;
+  box-shadow: 3px 3px 0 var(--ink);
+  margin: 0 0 36px;
+  max-width: fit-content;
+}
+.credit-strip .num{
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--ink);
+}
+.credit-strip .lbl{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-left: 4px;
+}
+.credit-strip .topup{
+  margin-left: 18px;
+  font-size: 13px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 1px;
+}
+.credit-strip .topup:hover{ color: var(--accent-2); border-color: var(--accent-2); }
+
 @media (max-width:760px){
   .desk{ padding: 40px 20px 60px; }
   .draft-card{ padding: 24px 20px; }
@@ -112,6 +146,11 @@
   <div class="desk-stamp caveat">your desk</div>
   <h1 class="fraunces">Paste a link.<br/>Lift a draft.</h1>
   <p class="desk-sub">Drop any YouTube URL below — we'll read the transcript and rewrite it as a blog post you'd actually publish.</p>
+
+  <div class="credit-strip">
+    <span><span class="num" id="credit-num">{{ profile.total_remaining }}</span><span class="lbl">credits left</span></span>
+    <a href="{% url 'billing' %}" class="topup">Top up →</a>
+  </div>
 
   <div class="url-form big">
     <div class="url-field flex">
@@ -179,6 +218,11 @@
         body: JSON.stringify({url}),
       });
       const data = await res.json();
+      if (res.status === 402 || data.out_of_credits) {
+        errorMsg.innerHTML = data.error + ' <a href="{% url "billing" %}" style="color:var(--accent);text-decoration:underline;">Top up →</a>';
+        showState(errorBox);
+        return;
+      }
       if (!res.ok || data.error) {
         errorMsg.textContent = data.error || 'Something went wrong. Please try again.';
         showState(errorBox);
@@ -186,6 +230,9 @@
       }
       blogOut.innerHTML = data.blog;
       showState(result);
+      if (typeof data.remaining === 'number') {
+        document.getElementById('credit-num').textContent = data.remaining;
+      }
     } catch (e) {
       errorMsg.textContent = 'Network error. Please check your connection and try again.';
       showState(errorBox);

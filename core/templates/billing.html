@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Billing — Lamarca{% endblock %}
+
+{% block extra_css %}
+.bill{
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 60px 32px 100px;
+}
+.bill-stamp{
+  font-size: 28px;
+  color: var(--accent-2);
+  transform: rotate(-3deg);
+  display: inline-block;
+  background: var(--cream);
+  padding: 4px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-bottom: 22px;
+}
+.bill h1{
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1;
+  margin: 0 0 14px;
+  font-weight: 500;
+}
+.bill-sub{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 18px;
+  margin: 0 0 36px;
+  max-width: 580px;
+}
+
+.balance-card{
+  display: flex; flex-wrap: wrap; gap: 20px;
+  align-items: center; justify-content: space-between;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 22px 28px;
+  box-shadow: 4px 4px 0 var(--ink);
+  margin-bottom: 50px;
+}
+.balance-num{
+  font-family: 'Fraunces', serif;
+  font-size: 44px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+}
+.balance-label{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.packs{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+.pack{
+  position: relative;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 36px 32px;
+  box-shadow: 6px 6px 0 var(--ink);
+  display: flex; flex-direction: column;
+  transition: transform .12s, box-shadow .12s;
+}
+.pack:hover{ transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+.pack-badge{
+  position: absolute; top: -14px; right: 20px;
+  background: var(--accent-2);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.pack-credits{
+  font-family: 'Caveat Brush', cursive;
+  font-size: 80px;
+  line-height: .9;
+  color: var(--ink);
+}
+.pack-credits-label{
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 18px;
+  margin: 4px 0 14px;
+}
+.pack-tagline{
+  font-family: 'Fraunces', serif;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+  flex: 1;
+}
+.pack-price{
+  font-family: 'Fraunces', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.bill-error{
+  margin-top: 24px;
+  padding: 14px 18px;
+  border: 1.5px solid var(--accent-2);
+  background: #ffe4d9;
+  color: var(--accent-2);
+  border-radius: 10px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  display: none;
+}
+
+@media (max-width: 760px){
+  .bill{ padding: 40px 20px 60px; }
+}
+{% endblock %}
+
+{% block content %}
+<main class="bill">
+  <div class="bill-stamp caveat">credits</div>
+  <h1 class="fraunces">Top up your desk.</h1>
+  <p class="bill-sub">Each credit is one generated blog post. Buy a pack and they're yours forever — they don't expire.</p>
+
+  <div class="balance-card">
+    <div>
+      <div class="balance-num">{{ profile.total_remaining }}</div>
+      <div class="balance-label">credits available</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="mono" style="color: var(--ink-3);">
+        {{ profile.credit_balance }} purchased · {{ profile.free_remaining }} free remaining
+      </div>
+      <div class="mono" style="color: var(--ink-3); margin-top: 4px;">
+        {{ profile.lifetime_generations }} drafts written all-time
+      </div>
+    </div>
+  </div>
+
+  <div class="packs">
+    {% for pack in packs %}
+    <div class="pack">
+      {% if pack.badge %}<div class="pack-badge">{{ pack.badge }}</div>{% endif %}
+      <div class="pack-credits caveat">{{ pack.credits }}</div>
+      <div class="pack-credits-label">{% if pack.credits == 1 %}credit{% else %}credits{% endif %}</div>
+      <p class="pack-tagline">{{ pack.tagline }}</p>
+      <div class="pack-price">{{ pack.price_label }}</div>
+      <button class="btn-primary btn-block buy-btn" data-price-id="{{ pack.price_id }}">
+        Buy ✦
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="bill-error" id="bill-error"></div>
+</main>
+
+<script>
+  const errBox = document.getElementById('bill-error');
+  function getCsrf() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? '';
+  }
+  document.querySelectorAll('.buy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const priceId = btn.dataset.priceId;
+      if (!priceId) {
+        errBox.textContent = 'This pack is not configured. Check STRIPE_PRICE_* env vars.';
+        errBox.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Redirecting…';
+      try {
+        const res = await fetch('{% url "buy_credits" %}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+          body: JSON.stringify({price_id: priceId}),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) {
+          errBox.textContent = data.error || 'Could not start checkout.';
+          errBox.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Buy ✦';
+          return;
+        }
+        window.location.href = data.url;
+      } catch (e) {
+        errBox.textContent = 'Network error. Please try again.';
+        errBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Buy ✦';
+      }
+    });
+  });
+</script>
+{% endblock %}

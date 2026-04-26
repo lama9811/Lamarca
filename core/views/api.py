@@ -1,10 +1,12 @@
 import json
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from google.genai import errors as genai_errors
 
+from ..models import Profile
 from ..services.gemini import generate_blog_html
 from ..services.transcripts import (
     TranscriptError,
@@ -33,6 +35,13 @@ def generate_blog(request):
             status=400,
         )
 
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if profile.total_remaining <= 0:
+        return JsonResponse(
+            {'error': "You're out of credits.", 'out_of_credits': True},
+            status=402,
+        )
+
     try:
         transcript = fetch_transcript(video_id)
     except TranscriptNotFound as e:
@@ -51,4 +60,17 @@ def generate_blog(request):
     except Exception as e:
         return JsonResponse({'error': f'Generation failed: {str(e)}'}, status=500)
 
-    return JsonResponse({'blog': blog_html})
+    # Charge a credit only after a successful generation. Spend free first, then paid.
+    with transaction.atomic():
+        profile = Profile.objects.select_for_update().get(pk=profile.pk)
+        if profile.free_remaining > 0:
+            profile.free_used += 1
+        else:
+            profile.credit_balance = max(0, profile.credit_balance - 1)
+        profile.lifetime_generations += 1
+        profile.save()
+
+    return JsonResponse({
+        'blog': blog_html,
+        'remaining': profile.total_remaining,
+    })

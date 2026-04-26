@@ -14,6 +14,12 @@ urlpatterns = [
     # App
     path('dashboard/', views.dashboard, name='dashboard'),
 
+    # Billing
+    path('billing/', views.billing, name='billing'),
+    path('billing/buy/', views.buy_credits, name='buy_credits'),
+    path('billing/success/', views.billing_success, name='billing_success'),
+    path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'),
+
     # API
     path('api/generate/', views.generate_blog, name='generate_blog'),
 ]
