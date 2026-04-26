@@ -33,6 +33,11 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# When set, CanonicalHostRedirectMiddleware bounces requests on Vercel
+# deploy-hash URLs to this host so Google Sign-In etc. always see the
+# registered origin. Leave empty in local dev.
+CANONICAL_HOST = os.environ.get('CANONICAL_HOST', '')
+
 # Google Sign-In's popup posts the credential back via window.opener.postMessage.
 # Django's default COOP of 'same-origin' breaks that. Allow popups to keep their opener.
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
@@ -56,6 +61,7 @@ INTERNAL_IPS = ['127.0.0.1']
 # ── Middleware ─────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.CanonicalHostRedirectMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
