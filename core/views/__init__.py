@@ -3,6 +3,7 @@ from .auth import register, login_view, logout_view, google_signin
 from .api import generate_blog
 from .billing import billing, buy_credits, billing_success, stripe_webhook
 from .diagnostic import diagnostic
+from .voices import voices, save_voice
 
 __all__ = [
     'home',
@@ -17,4 +18,6 @@ __all__ = [
     'billing_success',
     'stripe_webhook',
     'diagnostic',
+    'voices',
+    'save_voice',
 ]

@@ -22,12 +22,30 @@ def extract_video_id(url: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _format_timestamp(seconds: float) -> str:
+    """Format seconds as M:SS or H:MM:SS."""
+    s = int(seconds)
+    h, rem = divmod(s, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f'{h}:{m:02d}:{s:02d}'
+    return f'{m}:{s:02d}'
+
+
 def fetch_transcript(video_id: str) -> str:
-    """Fetch transcript text for a YouTube video, trimmed to fit model context."""
+    """Fetch transcript text with timestamp markers, trimmed to fit model context.
+
+    Output intersperses [M:SS] markers every ~8 seconds so the LLM can
+    preserve them as inline citations. Example:
+        [0:12]
+        So the first thing I want to talk about is...
+        [0:34]
+        But here's the catch...
+    """
     try:
         resp = requests.get(
             'https://api.supadata.ai/v1/youtube/transcript',
-            params={'url': f'https://www.youtube.com/watch?v={video_id}', 'text': 'true'},
+            params={'url': f'https://www.youtube.com/watch?v={video_id}'},
             headers={'x-api-key': settings.SUPADATA_API_KEY},
             timeout=30,
         )
@@ -42,8 +60,39 @@ def fetch_transcript(video_id: str) -> str:
         raise TranscriptError('Could not fetch transcript. Make sure the video is public and has captions.')
 
     data = resp.json()
-    transcript = data.get('content') or data.get('transcript') or data.get('text') or ''
-    if not transcript:
+    segments = data.get('content') or data.get('transcript') or []
+
+    # If the API returned plain text (older path or `text=true` is the default
+    # in some accounts), pass through unchanged.
+    if isinstance(segments, str):
+        return segments[:TRANSCRIPT_CHAR_LIMIT]
+
+    if not segments:
         raise TranscriptError(f'No transcript content returned. API response keys: {list(data.keys())}')
 
+    # Build a transcript with timestamp markers every ~8 seconds.
+    lines = []
+    last_marker_time = -100.0
+    buffer = []
+    for seg in segments:
+        text = (seg.get('text') or '').strip()
+        if not text:
+            continue
+        # Supadata can return 'offset' (ms) or 'start' (sec)
+        offset = seg.get('offset', seg.get('start', 0))
+        if offset > 1000:
+            offset = offset / 1000.0
+
+        if offset - last_marker_time >= 8:
+            if buffer:
+                lines.append(' '.join(buffer))
+                buffer = []
+            lines.append(f'[{_format_timestamp(offset)}]')
+            last_marker_time = offset
+        buffer.append(text)
+
+    if buffer:
+        lines.append(' '.join(buffer))
+
+    transcript = '\n'.join(lines)
     return transcript[:TRANSCRIPT_CHAR_LIMIT]
