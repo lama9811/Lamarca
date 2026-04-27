@@ -101,6 +101,45 @@ def _check_price_in_stripe(name: str, price_id: str) -> dict:
         return None
 
 
+def _discover_prices() -> list:
+    """If the secret key works, list every active price in Stripe so the
+    user can copy the right ID directly from this page."""
+    if not settings.STRIPE_SECRET_KEY.startswith(('sk_test_', 'sk_live_')):
+        return []
+    try:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        prices = stripe.Price.list(active=True, limit=20, expand=['data.product'])
+    except stripe.StripeError:
+        return []
+
+    rows = []
+    for p in prices.data:
+        amount = (p.unit_amount or 0) / 100
+        product_obj = p.product if hasattr(p, 'product') else None
+        product_name = (
+            getattr(product_obj, 'name', None)
+            or (product_obj if isinstance(product_obj, str) else 'Unknown product')
+        )
+        # Map dollar amounts to the env var that should hold this price
+        suggested_var = ''
+        if amount == 1:
+            suggested_var = 'STRIPE_PRICE_1_CREDIT'
+        elif amount == 5:
+            suggested_var = 'STRIPE_PRICE_5_CREDITS'
+        elif amount == 10:
+            suggested_var = 'STRIPE_PRICE_12_CREDITS'
+        rows.append({
+            'id': p.id,
+            'amount_label': f'${amount:.2f}',
+            'currency': p.currency.upper(),
+            'product': product_name,
+            'suggested_var': suggested_var,
+        })
+    # Sort by amount ascending so $1 / $5 / $10 line up in order
+    rows.sort(key=lambda r: float(r['amount_label'].lstrip('$')))
+    return rows
+
+
 @login_required
 def diagnostic(request):
     """Show the developer everything they need to debug Stripe config."""
@@ -130,10 +169,12 @@ def diagnostic(request):
         if result:
             rows.append(result)
 
+    discovered_prices = _discover_prices()
     all_ok = all(r['status'] == 'ok' for r in rows if r['status'] != 'skip')
 
     return render(request, 'diagnostic.html', {
         'rows': rows,
         'all_ok': all_ok,
+        'discovered_prices': discovered_prices,
         'canonical_host': getattr(settings, 'CANONICAL_HOST', '') or '(not set)',
     })
