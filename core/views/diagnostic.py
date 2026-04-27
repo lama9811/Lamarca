@@ -5,9 +5,15 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from ..services.stripe_service import resolve_to_price_id
 
-def _check(name: str, value: str, expected_prefix: str, what: str) -> dict:
-    """Build a row of diagnostic info for one env var."""
+
+def _check(name: str, value: str, expected_prefix: str, what: str,
+           accept_alternate_prefix: str = '') -> dict:
+    """Build a row of diagnostic info for one env var.
+    accept_alternate_prefix lets us treat e.g. prod_… as a soft pass
+    since the app auto-resolves it to a price_… at checkout.
+    """
     if not value:
         return {
             'name': name,
@@ -15,20 +21,28 @@ def _check(name: str, value: str, expected_prefix: str, what: str) -> dict:
             'detail': 'Not set on Vercel.',
             'fix': f'Add {name} to Vercel env vars (Production). It should be {what}.',
         }
-    if not value.startswith(expected_prefix):
-        masked = value[:8] + '…' if len(value) > 8 else value
+    if value.startswith(expected_prefix):
+        masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
         return {
             'name': name,
-            'status': 'fail',
-            'detail': f'Value starts with "{masked}" but should start with "{expected_prefix}".',
-            'fix': f'Replace the Vercel env var with the correct value: {what}.',
+            'status': 'ok',
+            'detail': f'Set, looks valid: {masked}',
+            'fix': '',
         }
-    masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
+    if accept_alternate_prefix and value.startswith(accept_alternate_prefix):
+        masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
+        return {
+            'name': name,
+            'status': 'ok',
+            'detail': f'Product ID detected ({masked}) — auto-resolves to a Price ID at checkout.',
+            'fix': '',
+        }
+    masked = value[:8] + '…' if len(value) > 8 else value
     return {
         'name': name,
-        'status': 'ok',
-        'detail': f'Set, looks valid: {masked}',
-        'fix': '',
+        'status': 'fail',
+        'detail': f'Value starts with "{masked}" but should start with "{expected_prefix}".',
+        'fix': f'Replace the Vercel env var with the correct value: {what}.',
     }
 
 
@@ -152,13 +166,16 @@ def diagnostic(request):
                'whsec_', 'the webhook signing secret from Stripe (starts with whsec_)'),
         _check('STRIPE_PRICE_1_CREDIT (or _CREDITS)',
                settings.STRIPE_CREDIT_PACKS[0].get('price_id', ''),
-               'price_', 'the Price ID for the $1 / 1-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $1 / 1-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
         _check('STRIPE_PRICE_5_CREDITS (or _CREDIT)',
                settings.STRIPE_CREDIT_PACKS[1].get('price_id', ''),
-               'price_', 'the Price ID for the $5 / 5-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $5 / 5-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
         _check('STRIPE_PRICE_12_CREDITS (or _10_CREDIT)',
                settings.STRIPE_CREDIT_PACKS[2].get('price_id', ''),
-               'price_', 'the Price ID for the $10 / 12-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $10 / 12-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
     ]
 
     rows.append(_ping_stripe())

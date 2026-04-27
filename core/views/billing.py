@@ -13,7 +13,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from ..models import Profile
-from ..services.stripe_service import create_checkout_session, construct_webhook_event
+from ..services.stripe_service import (
+    create_checkout_session,
+    construct_webhook_event,
+    resolve_to_price_id,
+)
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -45,12 +49,27 @@ def buy_credits(request):
     if not price_id or price_id not in settings.STRIPE_PRICE_TO_CREDITS:
         return JsonResponse({'error': 'Unknown credit pack.'}, status=400)
 
+    # Look up how many credits this pack grants and the dollar amount.
+    credits = settings.STRIPE_PRICE_TO_CREDITS[price_id]
+    pack = next((p for p in settings.STRIPE_CREDIT_PACKS if p['price_id'] == price_id), None)
+    expected_amount = None
+    if pack and pack.get('price_label', '').startswith('$'):
+        try:
+            expected_amount = float(pack['price_label'].lstrip('$'))
+        except ValueError:
+            pass
+
+    # If the env var contains a Product ID (prod_…) instead of a Price ID
+    # (price_…), resolve it now. No-op if it's already a price_….
+    resolved_price_id = resolve_to_price_id(price_id, expected_amount)
+
     try:
         session = create_checkout_session(
             user=request.user,
-            price_id=price_id,
+            price_id=resolved_price_id,
             success_url=request.build_absolute_uri(reverse('billing_success')) + '?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=request.build_absolute_uri(reverse('billing')),
+            metadata={'credits': credits},
         )
     except stripe.AuthenticationError:
         logger.exception('Stripe rejected our API key — STRIPE_SECRET_KEY env var is missing or wrong')
@@ -117,14 +136,25 @@ def _handle_checkout_completed(session):
         logger.error('Webhook: unknown user_id=%s', user_id)
         return
 
-    # Pull the price ID from the line items so we know which pack was purchased.
-    # Stripe doesn't expand line_items by default — re-fetch with expansion.
-    line_items = stripe.checkout.Session.list_line_items(session['id'], limit=10)
+    # First try metadata — buy_credits sets `metadata.credits` so we don't
+    # have to re-derive credits from price_id at all. This is the reliable
+    # path and works whether the user configured Price IDs or Product IDs.
     credits_to_grant = 0
-    for item in line_items.data:
-        price_id = item.price.id if item.price else None
-        if price_id and price_id in settings.STRIPE_PRICE_TO_CREDITS:
-            credits_to_grant += settings.STRIPE_PRICE_TO_CREDITS[price_id] * item.quantity
+    metadata = session.get('metadata') or {}
+    metadata_credits = metadata.get('credits')
+    if metadata_credits:
+        try:
+            credits_to_grant = int(metadata_credits)
+        except (TypeError, ValueError):
+            credits_to_grant = 0
+
+    # Fallback for legacy sessions without metadata: derive from line items.
+    if credits_to_grant <= 0:
+        line_items = stripe.checkout.Session.list_line_items(session['id'], limit=10)
+        for item in line_items.data:
+            price_id = item.price.id if item.price else None
+            if price_id and price_id in settings.STRIPE_PRICE_TO_CREDITS:
+                credits_to_grant += settings.STRIPE_PRICE_TO_CREDITS[price_id] * item.quantity
 
     if credits_to_grant <= 0:
         logger.error('Webhook: no recognized price IDs in session=%s', session.get('id'))
