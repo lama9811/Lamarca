@@ -93,6 +93,107 @@
 .marquee-star{ color:var(--accent-2); font-size:14px; }
 @keyframes mqueue{ from{transform:translateX(0)} to{transform:translateX(-33.3333%)} }
 
+/* ============ DIFFERENTIATORS ============ */
+.different{
+  max-width:1320px; margin:0 auto;
+  padding:90px 32px;
+  border-bottom:1px solid var(--rule);
+}
+.different-head{
+  max-width:760px;
+  margin-bottom:50px;
+}
+.different-head h2{
+  font-size:clamp(36px, 4.6vw, 64px);
+  line-height:1.05;
+  margin:8px 0 16px;
+  font-weight:500;
+  letter-spacing:-0.01em;
+}
+.different-head h2 em{ color:var(--accent-2); font-style:italic; }
+.different-head p{
+  font-family:'Fraunces', serif;
+  font-style:italic;
+  color:var(--ink-2);
+  font-size:18px;
+  line-height:1.55;
+  margin:0;
+}
+.diff-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:32px;
+}
+.diff-card{
+  position:relative;
+  background:var(--paper);
+  border:1.5px solid var(--ink);
+  border-radius:14px;
+  padding:36px 32px 32px;
+  box-shadow:6px 6px 0 var(--ink);
+  transition:transform .15s, box-shadow .15s;
+}
+.diff-card:hover{ transform:translate(-3px,-3px); box-shadow:9px 9px 0 var(--ink); }
+.diff-num{
+  position:absolute; top:-22px; left:24px;
+  background:var(--accent-2);
+  color:var(--paper);
+  width:42px; height:42px;
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-family:'Caveat Brush', cursive;
+  font-size:26px;
+  border:1.5px solid var(--ink);
+  box-shadow:3px 3px 0 var(--ink);
+  transform:rotate(-6deg);
+}
+.diff-card h3{
+  font-family:'Fraunces', serif;
+  font-size:24px;
+  margin:6px 0 12px;
+  font-weight:600;
+  line-height:1.2;
+}
+.diff-card p{
+  color:var(--ink-2);
+  font-size:15px;
+  line-height:1.6;
+  margin:0 0 18px;
+}
+.diff-demo{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  background:var(--paper-2);
+  border:1px dashed var(--rule);
+  border-radius:8px;
+  padding:10px 14px;
+  color:var(--ink-2);
+  line-height:1.5;
+}
+.diff-demo .ts-pill{
+  display:inline-block;
+  padding:1px 6px;
+  background:var(--cream);
+  border:1px solid var(--rule);
+  border-radius:4px;
+  font-size:11px;
+  color:var(--ink);
+  margin:0 2px;
+}
+.diff-demo blockquote{
+  margin:0;
+  padding:8px 12px;
+  border-left:2px solid var(--accent-2);
+  font-family:'Fraunces', serif;
+  font-style:italic;
+  font-size:13px;
+  color:var(--ink);
+}
+@media (max-width:900px){
+  .different{ padding:60px 20px; }
+  .diff-grid{ grid-template-columns:1fr; gap:36px; }
+}
+
 /* ============ FEATURED ============ */
 .featured{
   max-width:1320px; margin:0 auto;
@@ -493,11 +594,11 @@
     <div class="hero-content">
       <div class="hero-desc">
         <p>
-          The editorial trade school for every YouTube video
-          <br /> you've been meaning to write about. Paste a link,
-          <br /> get a draft that reads like a human wrote it.
+          YouTube videos, rewritten as drafts you'd actually publish.
+          <br /> In your voice. With citations to the source.
+          <br /> Ready for your CMS in thirty seconds.
         </p>
-        <a href="#what" class="hero-cta">What's Lamarca? →</a>
+        <a href="#different" class="hero-cta">What makes Lamarca different? →</a>
       </div>
       <form class="url-form big" id="hero-url-form">
         <div class="url-field">
@@ -513,24 +614,64 @@
   <div class="marquee">
     <div class="marquee-track">
       {% for t in "abc" %}
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>Free while in beta</span></span>
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>Now supporting long-form</span></span>
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>5 voices</span></span>
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>Markdown · HTML · plain</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Voice cloning from 3 samples</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Clickable timestamp citations</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Pull-quotes from the speaker</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Pay per draft, no subscription</span></span>
       <span class="marquee-item"><span class="marquee-star">✦</span><span>Built for writers, not robots</span></span>
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>Claim-checked drafts</span></span>
-      <span class="marquee-item"><span class="marquee-star">✦</span><span>Exports to Substack, Ghost, Medium</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>3 free drafts to start</span></span>
+      <span class="marquee-item"><span class="marquee-star">✦</span><span>Credits never expire</span></span>
       {% endfor %}
     </div>
   </div>
+
+  <!-- ===== DIFFERENTIATORS ===== -->
+  <section class="different" id="different">
+    <div class="different-head">
+      <div class="dept-label">What makes Lamarca different</div>
+      <h2 class="fraunces">Three things <em>only Lamarca</em><br/>does for your draft.</h2>
+      <p>Most "AI blog generators" output the same generic prose because they're a thin wrapper around a chat model. Lamarca is built for writers who want their voice to come through.</p>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff-card">
+        <div class="diff-num">1</div>
+        <h3>Your voice, not the AI's.</h3>
+        <p>Paste 1–3 paragraphs of your own past writing. Lamarca absorbs your sentence rhythm, vocabulary, and signature phrases — every future draft reads like you wrote it.</p>
+        <div class="diff-demo">
+          your samples → trained voice → published draft<br/>
+          <span style="color:var(--ink-3);">// no model fine-tuning required</span>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-num">2</div>
+        <h3>Clickable citations to the source.</h3>
+        <p>Each draft includes 2–4 inline timestamp pills next to the strongest claims. Click one and YouTube opens at the exact second the speaker said it. Readers trust drafts that show their work.</p>
+        <div class="diff-demo">
+          The transformer learned to attend
+          <span class="ts-pill">[3:42]</span> across the entire context window.
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-num">3</div>
+        <h3>Pull-quotes from the speaker.</h3>
+        <p>Lamarca picks 1–2 of the most quotable sentences directly from the transcript and renders them as styled blockquotes with timestamp attribution. Like a magazine, not a content mill.</p>
+        <div class="diff-demo">
+          <blockquote>"Attention is the only mechanism that scales." <span style="display:block;margin-top:4px;color:var(--ink-3);">— [5:12]</span></blockquote>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- ===== FEATURED DRAFT ===== -->
   <section class="featured">
     <div class="featured-left">
       <div class="dept-label">Today's featured draft</div>
-      <h2 class="fraunces">"I watched a 40-minute video on <em>attention heads</em> and got back a blog I actually wanted to read."</h2>
-      <div class="byline">— Sonia K., Tuesday</div>
-      <a href="{% url 'dashboard' %}" class="read-link">Read the draft →</a>
+      <h2 class="fraunces">"I dropped a 40-minute talk on attention heads in here. The draft I got back <em>actually sounded like me</em> — and the citations were perfect."</h2>
+      <div class="byline">— Sample testimonial · early beta</div>
+      <a href="{% url 'register' %}" class="read-link">Try it on your video →</a>
     </div>
     <div class="featured-right">
       <a href="{% url 'dashboard' %}" class="featured-cover">
