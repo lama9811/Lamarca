@@ -49,8 +49,15 @@ def generate_blog(request):
     except TranscriptError as e:
         return JsonResponse({'error': str(e)}, status=422)
 
+    use_voice = bool(data.get('use_voice')) and profile.has_voice
+    voice_samples = profile.voice_samples if use_voice else None
+
     try:
-        blog_html = generate_blog_html(transcript)
+        blog_html = generate_blog_html(
+            transcript,
+            voice_samples=voice_samples,
+            video_id=video_id,
+        )
     except genai_errors.ClientError as e:
         if getattr(e, 'code', None) == 429:
             return JsonResponse({'error': 'Rate limited. Please try again in a moment.'}, status=429)

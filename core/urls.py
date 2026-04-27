@@ -13,6 +13,8 @@ urlpatterns = [
 
     # App
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('voices/', views.voices, name='voices'),
+    path('voices/save/', views.save_voice, name='save_voice'),
 
     # Billing
     path('billing/', views.billing, name='billing'),

@@ -134,6 +134,65 @@
 }
 .credit-strip .topup:hover{ color: var(--accent-2); border-color: var(--accent-2); }
 
+/* Voice toggle */
+.voice-toggle{
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 0;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.voice-toggle input{ accent-color: var(--ink); width: 16px; height: 16px; }
+.voice-toggle .voice-link{
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+  font-style: normal;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+/* Inline timestamp citation */
+.draft-body .ts-cite{
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 0 2px;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+  text-decoration: none;
+  vertical-align: 1px;
+  transition: background .12s;
+}
+.draft-body .ts-cite:hover{ background: var(--accent-2); color: var(--paper); border-color: var(--ink); }
+
+/* Pull-quote */
+.draft-body blockquote{
+  margin: 28px 0;
+  padding: 18px 26px;
+  border-left: 3px solid var(--accent-2);
+  background: var(--paper-2);
+  border-radius: 0 10px 10px 0;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.draft-body blockquote cite{
+  display: block;
+  margin-top: 10px;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.draft-body blockquote cite .ts-cite{ vertical-align: 0; }
+
 @media (max-width:760px){
   .desk{ padding: 40px 20px 60px; }
   .draft-card{ padding: 24px 20px; }
@@ -160,6 +219,18 @@
     <button id="generate-btn" class="btn-primary">Generate ✦</button>
   </div>
   <p class="desk-hint">supports youtube.com &amp; youtu.be · the video must have captions</p>
+
+  {% if profile.has_voice %}
+  <label class="voice-toggle">
+    <input type="checkbox" id="use-voice" checked />
+    Write in my voice <span class="mono" style="color:var(--ink-3);">({{ profile.voice_samples|length }} sample{{ profile.voice_samples|length|pluralize }} loaded)</span>
+    <a href="{% url 'voices' %}" class="voice-link">edit →</a>
+  </label>
+  {% else %}
+  <p class="voice-toggle" style="color: var(--ink-3);">
+    Want drafts written in your own voice? <a href="{% url 'voices' %}" class="voice-link">Teach Lamarca →</a>
+  </p>
+  {% endif %}
 
   <div id="output-section" class="output-section" style="display:none;">
     <div id="loading-state" class="draft-card" style="display:none;">
@@ -212,10 +283,12 @@
     btn.disabled = true;
 
     try {
+      const useVoiceEl = document.getElementById('use-voice');
+      const useVoice = !!(useVoiceEl && useVoiceEl.checked);
       const res = await fetch('/api/generate/', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
-        body: JSON.stringify({url}),
+        body: JSON.stringify({url, use_voice: useVoice}),
       });
       const data = await res.json();
       if (res.status === 402 || data.out_of_credits) {

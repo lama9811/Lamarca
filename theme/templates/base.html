@@ -401,6 +401,7 @@ button{ font-family:inherit; }
     <nav class="nav-links">
       {% if user.is_authenticated %}
         <a href="{% url 'dashboard' %}">Drafts</a>
+        <a href="{% url 'voices' %}">Voice</a>
         <a href="{% url 'billing' %}">Credits</a>
         <a href="{% url 'logout' %}">Log out</a>
       {% else %}
