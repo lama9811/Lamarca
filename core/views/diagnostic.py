@@ -16,12 +16,40 @@ def _check(name: str, value: str, expected_prefix: str, what: str) -> dict:
             'fix': f'Add {name} to Vercel env vars (Production). It should be {what}.',
         }
     if not value.startswith(expected_prefix):
-        masked = value[:8] + '…' if len(value) > 8 else value
+        # Show enough of the value to make the actual mistake obvious.
+        # Since this is NOT a valid secret (wrong prefix), it's safe to show.
+        preview = value[:40] + '…' if len(value) > 40 else value
+        length = len(value)
+
+        # Detect common mistakes and give specific advice.
+        hints = []
+        if '=' in value:
+            hints.append(
+                'Your value contains "=". You may have pasted the entire '
+                f'KEY=VALUE line (e.g. "{name}=sk_test_…") into the Value field. '
+                'Only the part AFTER the "=" should go in the Value field.'
+            )
+        if value.upper() == value and value.startswith('STRIPE_'):
+            hints.append(
+                'Your value looks like an env var NAME (all caps, starts with '
+                'STRIPE_). The Value field should hold the SECRET, not the name. '
+                'In Stripe dashboard, click "Reveal test key" and copy what '
+                f'appears below it (starts with "{expected_prefix}").'
+            )
+        if value.startswith(' ') or value.endswith(' '):
+            hints.append('Your value has a leading or trailing space — remove it.')
+        if value.startswith(('"', "'")) or value.endswith(('"', "'")):
+            hints.append('Your value is wrapped in quotes — remove them. Vercel does not unquote.')
+
+        fix_text = f'Replace the Vercel env var with the correct value: {what}.'
+        if hints:
+            fix_text = ' '.join(hints) + ' ' + fix_text
+
         return {
             'name': name,
             'status': 'fail',
-            'detail': f'Value starts with "{masked}" but should start with "{expected_prefix}".',
-            'fix': f'Replace the Vercel env var with the correct value: {what}.',
+            'detail': f'Value: "{preview}" ({length} chars). Should start with "{expected_prefix}".',
+            'fix': fix_text,
         }
     masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
     return {
