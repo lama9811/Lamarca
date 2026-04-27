@@ -5,9 +5,15 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from ..services.stripe_service import resolve_to_price_id
 
-def _check(name: str, value: str, expected_prefix: str, what: str) -> dict:
-    """Build a row of diagnostic info for one env var."""
+
+def _check(name: str, value: str, expected_prefix: str, what: str,
+           accept_alternate_prefix: str = '') -> dict:
+    """Build a row of diagnostic info for one env var.
+    accept_alternate_prefix lets us treat e.g. prod_… as a soft pass
+    since the app auto-resolves it to a price_… at checkout.
+    """
     if not value:
         return {
             'name': name,
@@ -15,48 +21,57 @@ def _check(name: str, value: str, expected_prefix: str, what: str) -> dict:
             'detail': 'Not set on Vercel.',
             'fix': f'Add {name} to Vercel env vars (Production). It should be {what}.',
         }
-    if not value.startswith(expected_prefix):
-        # Show enough of the value to make the actual mistake obvious.
-        # Since this is NOT a valid secret (wrong prefix), it's safe to show.
-        preview = value[:40] + '…' if len(value) > 40 else value
-        length = len(value)
-
-        # Detect common mistakes and give specific advice.
-        hints = []
-        if '=' in value:
-            hints.append(
-                'Your value contains "=". You may have pasted the entire '
-                f'KEY=VALUE line (e.g. "{name}=sk_test_…") into the Value field. '
-                'Only the part AFTER the "=" should go in the Value field.'
-            )
-        if value.upper() == value and value.startswith('STRIPE_'):
-            hints.append(
-                'Your value looks like an env var NAME (all caps, starts with '
-                'STRIPE_). The Value field should hold the SECRET, not the name. '
-                'In Stripe dashboard, click "Reveal test key" and copy what '
-                f'appears below it (starts with "{expected_prefix}").'
-            )
-        if value.startswith(' ') or value.endswith(' '):
-            hints.append('Your value has a leading or trailing space — remove it.')
-        if value.startswith(('"', "'")) or value.endswith(('"', "'")):
-            hints.append('Your value is wrapped in quotes — remove them. Vercel does not unquote.')
-
-        fix_text = f'Replace the Vercel env var with the correct value: {what}.'
-        if hints:
-            fix_text = ' '.join(hints) + ' ' + fix_text
-
+    if value.startswith(expected_prefix):
+        masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
         return {
             'name': name,
-            'status': 'fail',
-            'detail': f'Value: "{preview}" ({length} chars). Should start with "{expected_prefix}".',
-            'fix': fix_text,
+            'status': 'ok',
+            'detail': f'Set, looks valid: {masked}',
+            'fix': '',
         }
-    masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
+    if accept_alternate_prefix and value.startswith(accept_alternate_prefix):
+        masked = value[:10] + '…' + value[-4:] if len(value) > 14 else value
+        return {
+            'name': name,
+            'status': 'ok',
+            'detail': f'Product ID detected ({masked}) — auto-resolves to a Price ID at checkout.',
+            'fix': '',
+        }
+
+    # Failed all checks — show enough of the value to make the mistake obvious
+    # and detect common paste errors so the user knows exactly what to fix.
+    # Since this isn't a valid secret (wrong prefix), it's safe to display.
+    preview = value[:40] + '…' if len(value) > 40 else value
+    length = len(value)
+
+    hints = []
+    if '=' in value:
+        hints.append(
+            'Your value contains "=". You may have pasted the entire '
+            f'KEY=VALUE line (e.g. "{name}=sk_test_…") into the Value field. '
+            'Only the part AFTER the "=" should go in the Value field.'
+        )
+    if value.upper() == value and value.startswith('STRIPE_'):
+        hints.append(
+            'Your value looks like an env var NAME (all caps, starts with '
+            'STRIPE_). The Value field should hold the SECRET, not the name. '
+            'In Stripe dashboard, click "Reveal test key" and copy what '
+            f'appears below it (starts with "{expected_prefix}").'
+        )
+    if value.startswith(' ') or value.endswith(' '):
+        hints.append('Your value has a leading or trailing space — remove it.')
+    if value.startswith(('"', "'")) or value.endswith(('"', "'")):
+        hints.append('Your value is wrapped in quotes — remove them. Vercel does not unquote.')
+
+    fix_text = f'Replace the Vercel env var with the correct value: {what}.'
+    if hints:
+        fix_text = ' '.join(hints) + ' ' + fix_text
+
     return {
         'name': name,
-        'status': 'ok',
-        'detail': f'Set, looks valid: {masked}',
-        'fix': '',
+        'status': 'fail',
+        'detail': f'Value: "{preview}" ({length} chars). Should start with "{expected_prefix}".',
+        'fix': fix_text,
     }
 
 
@@ -180,13 +195,16 @@ def diagnostic(request):
                'whsec_', 'the webhook signing secret from Stripe (starts with whsec_)'),
         _check('STRIPE_PRICE_1_CREDIT (or _CREDITS)',
                settings.STRIPE_CREDIT_PACKS[0].get('price_id', ''),
-               'price_', 'the Price ID for the $1 / 1-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $1 / 1-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
         _check('STRIPE_PRICE_5_CREDITS (or _CREDIT)',
                settings.STRIPE_CREDIT_PACKS[1].get('price_id', ''),
-               'price_', 'the Price ID for the $5 / 5-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $5 / 5-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
         _check('STRIPE_PRICE_12_CREDITS (or _10_CREDIT)',
                settings.STRIPE_CREDIT_PACKS[2].get('price_id', ''),
-               'price_', 'the Price ID for the $10 / 12-credit pack (starts with price_)'),
+               'price_', 'the Price ID for the $10 / 12-credit pack (starts with price_)',
+               accept_alternate_prefix='prod_'),
     ]
 
     rows.append(_ping_stripe())
