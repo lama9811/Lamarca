@@ -157,21 +157,34 @@ STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
 # Each entry maps a Stripe Price ID → number of generation credits granted.
+# We accept several env var name spellings so Vercel can use whichever
+# convention feels natural (singular/plural, by dollar amount, by credit count).
+def _first_env(*names: str) -> str:
+    for n in names:
+        v = os.environ.get(n, '').strip()
+        if v:
+            return v
+    return ''
+
 STRIPE_CREDIT_PACKS = [
     {
-        'price_id': os.environ.get('STRIPE_PRICE_1_CREDIT', ''),
+        'price_id': _first_env('STRIPE_PRICE_1_CREDIT', 'STRIPE_PRICE_1_CREDITS'),
         'credits': 1,
         'price_label': '$1',
         'tagline': 'One draft, one dollar.',
     },
     {
-        'price_id': os.environ.get('STRIPE_PRICE_5_CREDITS', ''),
+        'price_id': _first_env('STRIPE_PRICE_5_CREDITS', 'STRIPE_PRICE_5_CREDIT'),
         'credits': 5,
         'price_label': '$5',
         'tagline': 'Five drafts. Same price as a coffee.',
     },
     {
-        'price_id': os.environ.get('STRIPE_PRICE_12_CREDITS', ''),
+        'price_id': _first_env(
+            'STRIPE_PRICE_12_CREDITS',
+            'STRIPE_PRICE_10_CREDIT',
+            'STRIPE_PRICE_10_CREDITS',
+        ),
         'credits': 12,
         'price_label': '$10',
         'tagline': 'Twelve drafts. Two free on the house.',
